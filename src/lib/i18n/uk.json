@@ -179,5 +179,6 @@
   "lesson_open_course": "Відкрити курс",
   "lesson_real_one": "Справжній сайт",
   "lesson_genuine_q": "Яка адреса справді належить {brand}?",
-  "lesson_step": "Крок {n} з {total}"
+  "lesson_step": "Крок {n} з {total}",
+  "lesson_back_warning": "Назад до попередження"
 }

@@ -179,5 +179,6 @@
   "lesson_open_course": "Ouvrir le cours",
   "lesson_real_one": "Le vrai site",
   "lesson_genuine_q": "Laquelle appartient vraiment à {brand} ?",
-  "lesson_step": "Étape {n} sur {total}"
+  "lesson_step": "Étape {n} sur {total}",
+  "lesson_back_warning": "Retour à l’avertissement"
 }

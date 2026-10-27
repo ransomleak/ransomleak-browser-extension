@@ -179,5 +179,6 @@
   "lesson_open_course": "Open the course",
   "lesson_real_one": "The real site",
   "lesson_genuine_q": "Which one is really {brand}?",
-  "lesson_step": "Step {n} of {total}"
+  "lesson_step": "Step {n} of {total}",
+  "lesson_back_warning": "Back to warning"
 }

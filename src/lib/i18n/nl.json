@@ -179,5 +179,6 @@
   "lesson_open_course": "De cursus openen",
   "lesson_real_one": "De echte site",
   "lesson_genuine_q": "Welke hoort echt bij {brand}?",
-  "lesson_step": "Stap {n} van {total}"
+  "lesson_step": "Stap {n} van {total}",
+  "lesson_back_warning": "Terug naar de waarschuwing"
 }

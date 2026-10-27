@@ -2,6 +2,8 @@
 import { brandMark } from '../lib/brand.ts';
 import { el } from '../lib/dom.ts';
 import { stringsFor, type Strings } from '../lib/i18n.ts';
+import { lessonKindFor, type LessonKind } from '../lesson/content.ts';
+import { renderLesson, standaloneFromUrl } from './lesson.ts';
 
 export interface WarningInfo {
   domain: string;
@@ -12,8 +14,22 @@ export interface WarningInfo {
   highlight: [number, number];
   learn: boolean;
   locale: string;
+  lesson?: { kind: LessonKind; genuine: string | null; deny: string[]; course: boolean };
 }
-export type WarningAction = 'back' | 'continue' | 'request' | 'learn' | 'keep';
+export type WarningAction = 'back' | 'continue' | 'request' | 'learn' | 'keep' | 'lesson-done';
+
+/** Opens the lesson in place of the warning content; "Back to warning" re-renders the warning. */
+function openLesson(doc: Document, info: WarningInfo, s: Strings, act: (a: WarningAction) => void | Promise<unknown>): void {
+  const l = info.lesson ?? { kind: lessonKindFor(info.kind), genuine: null, deny: [], course: false };
+  renderLesson(
+    doc,
+    { kind: l.kind, domain: info.domain, highlight: info.highlight, genuine: l.genuine, deny: l.deny, course: l.course, standalone: false },
+    s,
+    (a) => void act(a === 'course' ? 'learn' : 'back'),
+    () => void act('lesson-done'),
+    () => render(doc, info, s, act),
+  );
+}
 
 export function render(doc: Document, info: WarningInfo, s: Strings, act: (a: WarningAction) => void | Promise<unknown>): void {
   doc.documentElement.lang = info.locale;
@@ -30,7 +46,8 @@ export function render(doc: Document, info: WarningInfo, s: Strings, act: (a: Wa
     const btn = el(doc, 'button', text, cls);
     btn.type = 'button';
     btn.dataset['action'] = action;
-    btn.addEventListener('click', () => void act(action));
+    // "Learn why" opens the lesson here; the course link moves to the lesson's done step.
+    btn.addEventListener('click', () => (action === 'learn' ? openLesson(doc, info, s, act) : void act(action)));
     buttons.append(btn);
     return btn;
   };
@@ -43,6 +60,7 @@ export function render(doc: Document, info: WarningInfo, s: Strings, act: (a: Wa
     main.append(box);
     button('back', s.back, 'primary').autofocus = true;
     button('keep', s.dl_keep, 'secondary');
+    button('learn', s.learn, 'link');
     main.append(buttons);
     doc.body.replaceChildren(main);
     return;
@@ -70,13 +88,32 @@ export function render(doc: Document, info: WarningInfo, s: Strings, act: (a: Wa
   } else {
     button('continue', s.continue, 'secondary');
   }
-  if (info.learn) button('learn', s.learn, 'link');
+  button('learn', s.learn, 'link');
   main.append(buttons);
   doc.body.replaceChildren(main);
 }
 
+/** Standalone lesson (`?lesson=consent|aipaste&d=<host>`), opened from the in-page overlays. */
+export function renderStandalone(doc: Document, search: string, locale: string, send: (m: unknown) => unknown, close: () => void): boolean {
+  const st = standaloneFromUrl(search);
+  if (!st) return false;
+  const s = stringsFor(locale);
+  doc.documentElement.lang = locale in { en: 1, de: 1, fr: 1, it: 1, nl: 1, uk: 1 } ? locale : 'en';
+  doc.title = s.page_title;
+  renderLesson(
+    doc,
+    { kind: st.kind, domain: st.domain, genuine: null, course: false, standalone: true },
+    s,
+    () => close(),
+    () => { if (st.domain) void send({ type: 'lesson-done', kind: st.kind, domain: st.domain }); },
+  );
+  return true;
+}
+
 async function main(): Promise<void> {
   const send = (m: unknown): Promise<unknown> => chrome.runtime.sendMessage(m);
+  const locale = (navigator.language || 'en').slice(0, 2).toLowerCase();
+  if (renderStandalone(doc(), location.search, locale, send, () => window.close())) return;
   const info = (await send({ type: 'warning-info' })) as WarningInfo | { error: string } | undefined;
   if (!info || 'error' in info) {
     doc().body.textContent = '';
