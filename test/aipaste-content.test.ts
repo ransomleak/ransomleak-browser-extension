@@ -110,6 +110,31 @@ describe('AI paste content script', () => {
     expect(send.mock.calls.some((c) => (c[0] as { type: string }).type === 'aipaste-event')).toBe(false);
   });
 
+  it('block mode shows Learn why and it sends open-lesson', async () => {
+    const shadow = captureShadow();
+    const { send, ta } = await setup('block');
+    paste(ta, SECRET);
+    const root = shadow()!;
+    expect(root.querySelector('[data-action=paste]')).toBeNull();
+    const learn = root.querySelector('[data-action=learn]') as HTMLButtonElement;
+    expect(learn).toBeTruthy();
+    learn.click();
+    await flush();
+    expect(send).toHaveBeenLastCalledWith({ type: 'open-lesson', kind: 'aipaste' });
+  });
+
+  it('warns without page data when open-lesson fails', async () => {
+    const shadow = captureShadow();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { send, ta } = await setup('warn');
+    send.mockImplementation(async (m: unknown) => { if ((m as { type: string }).type === 'open-lesson') throw new Error('x'); return { ok: true }; });
+    paste(ta, SECRET);
+    (shadow()!.querySelector('[data-action=learn]') as HTMLButtonElement).click();
+    await flush();
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0])).not.toContain('AKIA');
+  });
+
   it('puts the overlay back when a page script removes it', async () => {
     await setup('warn');
     paste(document.getElementById('t')!, SECRET);

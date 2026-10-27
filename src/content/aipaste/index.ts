@@ -154,7 +154,7 @@ export function install(
       }
     };
     const show = (): HTMLElement => showOverlay(doc, pasteText(category, block, lang), block, lang, choose,
-      () => { void send({ type: 'open-lesson', kind: 'aipaste' }).catch(() => {}); });
+      () => { void send({ type: 'open-lesson', kind: 'aipaste' }).catch(() => console.warn('RansomLeak: could not open the lesson')); });
     pending = { host: show(), reshow: () => { if (pending) pending.host = show(); } };
   };
   doc.addEventListener('paste', onPaste, true);

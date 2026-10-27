@@ -33,6 +33,17 @@ function send(message: unknown): void {
   }
 }
 
+function openLesson(): void {
+  const warn = (): void => console.warn('RansomLeak: could not open the lesson');
+  try {
+    if (!chrome.runtime?.id) return;
+    const p = chrome.runtime.sendMessage({ type: 'open-lesson', kind: 'consent' }) as Promise<unknown> | undefined;
+    p?.catch?.(warn);
+  } catch {
+    warn();
+  }
+}
+
 /** Asks the background for the OAuth request captured from this tab's authorize URLs (null if none). */
 async function storedRequest(provider: Provider): Promise<OAuthRequest | null> {
   try {
@@ -55,7 +66,7 @@ async function handle(info: ConsentInfo): Promise<void> {
   if (risky && (mode === 'warn' || mode === 'block')) {
     const locale = pickLocale(await readLocale(), navigator.language);
     showOverlay(document, info, mode, { locale, onRequest: send, onContinue: () => send({ type: 'consent-action', action: 'continue', info }),
-      onLearn: () => send({ type: 'open-lesson', kind: 'consent' }) });
+      onLearn: openLesson });
   }
 }
 

@@ -9,7 +9,7 @@ import uk from '../src/lib/i18n/uk.json';
 
 const LOCALES: Record<string, Record<string, string>> = { en, de, fr, it: itL, nl, uk };
 const PARTS = ['title', 'what', 'habit1', 'habit2', 'q', 'a', 'w1', 'w2', 'why'];
-const SHARED = ['next', 'check', 'retry', 'done_title', 'done_body', 'back_safety', 'open_course', 'real_one', 'genuine_q', 'step'];
+const SHARED = ['next', 'done_title', 'done_body', 'back_safety', 'open_course', 'real_one', 'genuine_q', 'step'];
 
 describe('lesson content', () => {
   it('every lesson kind has every string in every locale, non-empty', () => {

@@ -1,11 +1,13 @@
 // In-browser lessons: the completion event and the standalone lesson tab (consent / AI paste).
 import { LESSON_KINDS, type LessonKind } from '../lesson/content.ts';
 import { enqueue, flush } from './events.ts';
+import { WARNING_PATH } from './paths.ts';
 import { claimOnce, getAuth } from './store.ts';
 
 export const LESSON_SEEN_KEY = 'lessonSeen';
 const LESSON_SEEN_MS = 36 * 60 * 60 * 1000;
-const WARNING_PATH = 'src/warning/warning.html';
+const OPEN_LESSON_MS = 5000;
+export const OPEN_LESSON_KEY = 'lessonOpened';
 
 /** Lowercase hostname: 1-253 chars, at least one dot, labels of [a-z0-9-] (punycode allowed). */
 export function isHostname(d: unknown): d is string {
@@ -37,6 +39,7 @@ export async function openLesson(msg: { kind?: unknown }, sender: chrome.runtime
     return { ok: false };
   }
   if ((u.protocol !== 'http:' && u.protocol !== 'https:') || !isHostname(u.hostname)) return { ok: false };
+  if (!(await claimOnce(OPEN_LESSON_KEY, `${sender.tab.id}|${msg.kind}`, OPEN_LESSON_MS, true))) return { ok: false };
   const page = new URL(chrome.runtime.getURL(WARNING_PATH));
   page.searchParams.set('lesson', msg.kind);
   page.searchParams.set('d', u.hostname);
@@ -46,8 +49,8 @@ export async function openLesson(msg: { kind?: unknown }, sender: chrome.runtime
   return { ok: true };
 }
 
-/** `lesson-done` from the standalone lesson page. */
+/** `lesson-done` from the standalone lesson page (consent / AI paste only; the warning page records the rest). */
 export async function lessonDone(msg: { kind?: unknown; domain?: unknown }): Promise<{ ok: boolean }> {
-  if (!isLessonKind(msg.kind) || !isHostname(msg.domain)) return { ok: false };
+  if ((msg.kind !== 'consent' && msg.kind !== 'aipaste') || !isHostname(msg.domain)) return { ok: false };
   return { ok: await recordLesson(msg.kind, msg.domain) };
 }

@@ -81,8 +81,29 @@ describe('lesson background', () => {
     expect(lessons()[0]).toMatchObject({ domain: 'rnicrosoft.com', action: 'logged', value: 'lookalike' });
     const local = structuredClone(chrome.storage.local.dump) as Record<string, unknown>;
     await boot(local);
-    await send(chrome.runtime.onMessage, { type: 'lesson-done', kind: 'lookalike', domain: 'rnicrosoft.com' }, fromPage);
+    await nav('https://rnicrosoft.com/login');
+    await send(chrome.runtime.onMessage, { type: 'warning-action', action: 'lesson-done' }, fromWarning);
     expect(lessons()).toHaveLength(1);
+  });
+
+  it('standalone lesson-done accepts only consent and aipaste', async () => {
+    await boot();
+    expect(await send(chrome.runtime.onMessage, { type: 'lesson-done', kind: 'lookalike', domain: 'rnicrosoft.com' }, fromPage)).toEqual({ ok: false });
+    expect(await send(chrome.runtime.onMessage, { type: 'lesson-done', kind: 'download', domain: 'rnicrosoft.com' }, fromPage)).toEqual({ ok: false });
+    expect(lessons()).toHaveLength(0);
+    expect(await send(chrome.runtime.onMessage, { type: 'lesson-done', kind: 'aipaste', domain: 'chatgpt.com' }, fromPage)).toEqual({ ok: true });
+    expect(lessons()).toHaveLength(1);
+  });
+
+  it('open-lesson opens at most one tab per sender tab and kind per 5 seconds', async () => {
+    await boot();
+    const s = { id: 'extid', url: 'https://accounts.google.com/o/oauth2/auth', tab: { id: 3 }, frameId: 0 };
+    expect(await send(chrome.runtime.onMessage, { type: 'open-lesson', kind: 'consent' }, s)).toEqual({ ok: true });
+    expect(await send(chrome.runtime.onMessage, { type: 'open-lesson', kind: 'consent' }, s)).toEqual({ ok: false });
+    expect(chrome.tabs.create).toHaveBeenCalledTimes(1);
+    await send(chrome.runtime.onMessage, { type: 'open-lesson', kind: 'aipaste' }, s);
+    await send(chrome.runtime.onMessage, { type: 'open-lesson', kind: 'consent' }, { ...s, tab: { id: 4 } });
+    expect(chrome.tabs.create).toHaveBeenCalledTimes(3);
   });
 
   it('recordLesson rejects empty or invalid domains', async () => {

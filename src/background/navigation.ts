@@ -13,13 +13,14 @@ import { enqueue, enqueueAll, flush } from './events.ts';
 import { lessonKindFor } from '../lesson/content.ts';
 import { genuineDomain } from '../lesson/quiz.ts';
 import { recordLesson } from './lesson.ts';
+import { WARNING_PATH } from './paths.ts';
 import { loadFeed } from './policy.ts';
 import {
   actionFor, chromeLocalStore, claimOnce, pruneOnce, getAuth, getAuthAndPolicy, getLocal, getPolicy, getSession, locked, modeOf, setLocal, setSession,
   THROTTLE_MS, type Mode, type Policy, type Signal,
 } from './store.ts';
 
-export const WARNING_PATH = 'src/warning/warning.html';
+export { WARNING_PATH };
 
 /** `watch` = the tenant's brand-watch look-alikes (policy.knownBad). */
 type Kind = 'tenant' | 'brand' | 'risky' | 'known' | 'watch';
