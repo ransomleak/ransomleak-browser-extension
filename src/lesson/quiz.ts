@@ -1,3 +1,4 @@
+import { parse } from 'tldts';
 import { DEFAULT_BRAND_OWNERS } from '../detect/brands';
 import { CONFUSABLES } from '../lib/confusables';
 import type { Strings } from '../lib/i18n';
@@ -45,19 +46,37 @@ function shuffle<T>(items: T[], rand: () => number): T[] {
 
 /**
  * Three options for "which one is the real address": the genuine domain plus two generated fakes.
- * Fakes never equal the genuine domain, the person's own (fake) domain, or each other.
+ * Fakes never equal the genuine domain, the person's own (fake) domain, or each other, and never live under
+ * the genuine registrable domain or any brand-owned domain (`deny` plus DEFAULT_BRAND_OWNERS).
+ * Returns null when a safe quiz cannot be generated (IDN / punycode / unparsable genuine domain);
+ * the caller then uses `fixedQuiz`.
  */
-export function lookalikeQuiz(genuine: string, caseDomain: string, rand: () => number = Math.random): QuizOption[] {
+export function lookalikeQuiz(
+  genuine: string,
+  caseDomain: string,
+  rand: () => number = Math.random,
+  deny: string[] = [],
+): QuizOption[] | null {
   const real = genuine.toLowerCase();
   const own = caseDomain.toLowerCase();
-  const dot = real.indexOf('.');
-  const label = dot > 0 ? real.slice(0, dot) : real;
-  const rest = dot > 0 ? real.slice(dot) : '.com';
+  const p = parse(real);
+  const label = p.domainWithoutSuffix ?? '';
+  const suffix = p.publicSuffix ?? '';
+  const realReg = p.domain ?? '';
+  if (!realReg || !label || !suffix) return null;
+  if (!/^[a-z0-9-]+$/.test(label) || label.startsWith('xn--') || !/^[a-z0-9.-]+$/.test(suffix) || suffix.includes('xn--')) return null;
+
+  const blocked = new Set<string>(deny.map((d) => d.toLowerCase()));
+  for (const list of Object.values(DEFAULT_BRAND_OWNERS)) for (const d of list) blocked.add(d.toLowerCase());
+  blocked.add(realReg);
 
   const taken = new Set<string>([real, own]);
   const fakes: string[] = [];
-  const add = (c: string): boolean => {
-    if (!c || taken.has(c) || !/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(c)) return false;
+  const add = (l: string): boolean => {
+    const c = `${l}.${suffix}`;
+    if (taken.has(c) || !/^[a-z0-9-]+$/.test(l) || l.startsWith('-') || l.endsWith('-') || l.length > 63) return false;
+    const reg = parse(c).domain;
+    if (!reg || reg !== c || blocked.has(reg)) return false;
     taken.add(c);
     fakes.push(c);
     return true;
@@ -65,21 +84,15 @@ export function lookalikeQuiz(genuine: string, caseDomain: string, rand: () => n
 
   // Pattern 1: one look-alike character swap inside the label.
   const swaps = asciiSwaps();
-  for (const [from, to] of swaps) {
-    let idx = label.indexOf(from);
-    while (idx !== -1) {
-      if (add(label.slice(0, idx) + to + label.slice(idx + from.length) + rest)) break;
-      idx = label.indexOf(from, idx + 1);
+  outer: for (const [from, to] of swaps) {
+    for (let idx = label.indexOf(from); idx !== -1; idx = label.indexOf(from, idx + 1)) {
+      if (add(label.slice(0, idx) + to + label.slice(idx + from.length))) break outer;
     }
-    if (fakes.length) break;
   }
-  // Pattern 2: real name plus a suffix.
-  add(`${label}-secure${rest}`);
-  add(`${real}-login.co`);
-  // Fallbacks (always succeed, so there are always exactly two distinct fakes).
-  add(`${label}-verify${rest}`);
-  add(`${label}-support${rest}`);
-  for (let n = 1; fakes.length < 2; n++) add(`${label}-${n}${rest}`);
+  // Pattern 2: real name plus a suffix word; then bounded fallbacks.
+  for (const w of ['secure', 'login', 'verify', 'support']) if (fakes.length < 2) add(`${label}-${w}`);
+  for (let n = 1; n <= 20 && fakes.length < 2; n++) add(`${label}-${n}`);
+  if (fakes.length < 2) return null;
 
   return shuffle(
     [{ text: real, correct: true }, ...fakes.slice(0, 2).map((text) => ({ text, correct: false }))],

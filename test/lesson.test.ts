@@ -62,7 +62,7 @@ describe('lesson quiz', () => {
   });
 
   it('lookalikeQuiz never offers the person\'s own domain and has one correct answer', () => {
-    const q = lookalikeQuiz('microsoft.com', 'micros0ft-login.com');
+    const q = lookalikeQuiz('microsoft.com', 'micros0ft-login.com')!;
     expect(new Set(q.map((o) => o.text)).size).toBe(3);
     expect(q.filter((o) => o.correct)).toHaveLength(1);
     expect(q.find((o) => o.correct)!.text).toBe('microsoft.com');
@@ -71,7 +71,7 @@ describe('lesson quiz', () => {
 
   it('lookalikeQuiz keeps three distinct options for very short domains and colliding case domains', () => {
     for (const [g, c] of [['x.com', 'x-login.com'], ['x.com', 'x-secure.com'], ['x.com', 'x.com-login.co'], ['paypal.com', 'paypa1.com'], ['a.io', 'a-secure.io']] as Array<[string, string]>) {
-      const q = lookalikeQuiz(g, c, seeded(3));
+      const q = lookalikeQuiz(g, c, seeded(3))!;
       expect(new Set(q.map((o) => o.text)).size, g + c).toBe(3);
       expect(q.some((o) => o.text === c)).toBe(false);
       expect(q.filter((o) => o.correct).map((o) => o.text)).toEqual([g]);
@@ -88,5 +88,31 @@ describe('lesson quiz', () => {
     const q = fixedQuiz(stringsFor('en'), 'download', seeded(1));
     expect(q).toHaveLength(3);
     expect(q.filter((o) => o.correct)).toHaveLength(1);
+  });
+
+  it('returns null (caller uses fixedQuiz) for IDN and punycode genuine domains, without hanging', () => {
+    expect(lookalikeQuiz('bücher.de', 'evil.com')).toBeNull();
+    expect(lookalikeQuiz('xn--bcher-kva.de', 'evil.com')).toBeNull();
+    expect(lookalikeQuiz('', 'evil.com')).toBeNull();
+  });
+
+  it('multi-label genuine domains: fakes are never under the genuine registrable domain', () => {
+    const q = lookalikeQuiz('login.microsoftonline.com', 'evil.com', seeded(5))!;
+    const fakes = q.filter((o) => !o.correct).map((o) => o.text);
+    expect(fakes).toHaveLength(2);
+    for (const f of fakes) {
+      expect(f.endsWith('microsoftonline.com')).toBe(false);
+      expect(f.split('.').length).toBe(2);
+    }
+  });
+
+  it('respects the deny list and brand-owned domains', () => {
+    const q = lookalikeQuiz('acme.com', 'evil.com', seeded(2), ['acme-secure.com', 'acme-login.com'])!;
+    const fakes = q.filter((o) => !o.correct).map((o) => o.text);
+    expect(fakes).not.toContain('acme-secure.com');
+    expect(fakes).not.toContain('acme-login.com');
+    expect(fakes).toHaveLength(2);
+    const ms = lookalikeQuiz('microsoft.com', 'evil.com')!.filter((o) => !o.correct).map((o) => o.text);
+    expect(ms).not.toContain('microsoft.com');
   });
 });
