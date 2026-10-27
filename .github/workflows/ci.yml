@@ -1,0 +1,49 @@
+name: CI
+on:
+  pull_request:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm run check:permissions
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: verify
+    runs-on: ubuntu-latest
+    # Required reviewers on this environment give the second-person approval (spec section 12).
+    environment: store-release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run check:permissions
+      - name: Package and hash
+        run: |
+          (cd dist && zip -X -r -q ../ransomleak-extension.zip .)
+          sha256sum ransomleak-extension.zip | tee ransomleak-extension.zip.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ransomleak-extension
+          path: |
+            ransomleak-extension.zip
+            ransomleak-extension.zip.sha256

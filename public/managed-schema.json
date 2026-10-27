@@ -1,0 +1,8 @@
+{
+  "type": "object",
+  "properties": {
+    "tenantSubdomain": { "title": "Tenant subdomain", "type": "string" },
+    "apiBaseUrl": { "title": "API base URL", "type": "string" },
+    "enrollmentToken": { "title": "Enrollment token", "type": "string" }
+  }
+}

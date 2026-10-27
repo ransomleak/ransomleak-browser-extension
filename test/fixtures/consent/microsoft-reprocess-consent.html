@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="uk"><head><meta charset="utf-8"><title>Вхід в обліковий запис</title></head>
+<body>
+<form name="f1" method="post" action="/common/Consent/Set">
+  <input type="hidden" name="acceptConsent" value="false">
+  <input type="hidden" name="upgradeToAdminConsent" value="false">
+  <input type="hidden" name="flowToken" value="SECRET-FLOW-TOKEN">
+  <input type="hidden" name="ctx" value="SECRET-CTX">
+  <input type="hidden" name="canary" value="SECRET-CANARY">
+  <div class="row app-info">
+    <div class="text-title">Microsoft Graph Command Line Tools</div>
+    <div class="publisher"><a id="appDomainLinkToAppInfo" href="#" aria-label="Microsoft Corporation видавця перевірено.">Microsoft Corporation</a><img class="consent-badge" src="verified.svg"></div>
+  </div>
+  <div role="heading" aria-level="1">Запитані дозволи</div>
+  <div class="scope" data-bind="foreach: scopes"><div class="toggle table"><div><div class="table-cell"><div class="label text-13">Read and write access to your mail</div></div></div></div></div>
+  <div class="scope" data-bind="foreach: scopes"><div class="toggle table"><div><div class="table-cell"><div class="label text-13">Maintain access to data you have given it access to</div></div></div></div></div>
+  <div class="scope" data-bind="foreach: scopes"><div class="toggle table"><div><div class="table-cell"><div class="label text-13">View your basic profile</div></div></div></div></div>
+  <label><input type="checkbox" id="upgradeConsentCheckbox"> Consent on behalf of your organization</label>
+  <div id="applicationTerms"><a id="appTermsLink" href="#">Terms</a> <a id="appPrivacyLink" href="#">Privacy</a></div>
+  <a id="reportSuspiciousApp" href="#">Does this app look suspicious? Report it here</a>
+  <input type="button" value="Скасувати"> <input type="submit" value="Прийняти">
+</form>
+</body></html>

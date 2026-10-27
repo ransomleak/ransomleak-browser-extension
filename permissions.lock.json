@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "permissions": [
+    "webNavigation",
+    "storage",
+    "alarms",
+    "scripting",
+    "activeTab"
+  ],
+  "host_permissions": [],
+  "optional_permissions": [
+    "downloads",
+    "notifications"
+  ],
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
+  "content_scripts_matches": [
+    "https://login.microsoftonline.com/*/oauth2/*",
+    "https://login.microsoftonline.com/*/reprocess*",
+    "https://login.microsoftonline.com/*/SAS/ProcessAuth*",
+    "https://login.microsoftonline.com/*/login*",
+    "https://login.microsoftonline.com/*/kmsi*",
+    "https://accounts.google.com/signin/oauth/*",
+    "https://accounts.google.com/o/oauth2/*",
+    "https://slack.com/oauth/*",
+    "https://*.slack.com/oauth*"
+  ],
+  "externally_connectable": {
+    "matches": [
+      "https://app.ransomleak.com/*",
+      "https://app.eu.ransomleak.com/*"
+    ]
+  },
+  "content_security_policy": null,
+  "web_accessible_resources": null
+}
