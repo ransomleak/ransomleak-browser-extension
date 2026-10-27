@@ -177,6 +177,7 @@
   "lesson_open_course": "Ouvrir le cours",
   "lesson_real_one": "Le vrai site",
   "lesson_genuine_q": "Laquelle appartient vraiment à {brand} ?",
+  "lesson_genuine_why": "Seule {domain} est l'adresse de {brand}. Les autres ajoutent ou remplacent des caractères pour lui ressembler.",
   "lesson_step": "Étape {n} sur {total}",
   "lesson_back_warning": "Retour à l’avertissement"
 }

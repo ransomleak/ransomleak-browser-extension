@@ -177,6 +177,7 @@
   "lesson_open_course": "De cursus openen",
   "lesson_real_one": "De echte site",
   "lesson_genuine_q": "Welke hoort echt bij {brand}?",
+  "lesson_genuine_why": "Alleen {domain} is het eigen adres van {brand}. De andere voegen tekens toe of vervangen ze om erop te lijken.",
   "lesson_step": "Stap {n} van {total}",
   "lesson_back_warning": "Terug naar de waarschuwing"
 }

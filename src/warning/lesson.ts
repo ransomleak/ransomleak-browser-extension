@@ -5,7 +5,17 @@ import { el } from '../lib/dom.ts';
 import type { Strings } from '../lib/i18n.ts';
 import { isHostname } from '../lib/domain.ts';
 import { isStandaloneKind, type LessonKind, type StandaloneKind } from '../lesson/content.ts';
+import { parse } from 'tldts';
 import { fixedQuiz, lessonText, lookalikeQuiz, type QuizOption } from '../lesson/quiz.ts';
+
+/** Brands whose name is not just the capitalised domain label. */
+const BRAND_NAMES: Readonly<Record<string, string>> = { paypal: 'PayPal', linkedin: 'LinkedIn', github: 'GitHub', docusign: 'DocuSign', icloud: 'iCloud', whatsapp: 'WhatsApp', youtube: 'YouTube', wetransfer: 'WeTransfer', godaddy: 'GoDaddy', lastpass: 'LastPass', mcafee: 'McAfee', wellsfargo: 'Wells Fargo', bankofamerica: 'Bank of America', capitalone: 'Capital One', navyfederal: 'Navy Federal', usaa: 'USAA', hsbc: 'HSBC', bnpparibas: 'BNP Paribas', abnamro: 'ABN AMRO', commbank: 'CommBank', cash: 'Cash App', cashapp: 'Cash App', americanexpress: 'American Express', metamask: 'MetaMask', trustwallet: 'Trust Wallet', okx: 'OKX', dhl: 'DHL', fedex: 'FedEx', usps: 'USPS', royalmail: 'Royal Mail', laposte: 'La Poste', postnl: 'PostNL', novaposhta: 'Nova Poshta', privatbank: 'PrivatBank', epicgames: 'Epic Games', playstation: 'PlayStation', tiktok: 'TikTok', ebay: 'eBay', aliexpress: 'AliExpress', mercadolibre: 'Mercado Libre', openai: 'OpenAI', quickbooks: 'QuickBooks', jpmorgan: 'JPMorgan', jpmorganchase: 'JPMorgan Chase', 'deutsche-bank': 'Deutsche Bank', deutschebank: 'Deutsche Bank', 'credit-agricole': 'Crédit Agricole', societegenerale: 'Société Générale', steampowered: 'Steam', steamcommunity: 'Steam', aol: 'AOL', bybit: 'Bybit', kucoin: 'KuCoin', x: 'X' };
+
+/** "microsoft.com" -> "Microsoft", "paypal.com" -> "PayPal": the quiz names the brand, never the answer itself. */
+export function brandName(genuine: string): string {
+  const label = parse(genuine).domainWithoutSuffix ?? genuine.split('.')[0] ?? genuine;
+  return BRAND_NAMES[label] ?? label.charAt(0).toUpperCase() + label.slice(1);
+}
 
 export interface LessonCase {
   kind: LessonKind;
@@ -42,7 +52,7 @@ export function renderLesson(
   const lookalike = c.kind === 'lookalike' && !c.standalone;
   const generated = lookalike && c.genuine && c.domain ? lookalikeQuiz(c.genuine, c.domain, Math.random, c.deny ?? []) : null;
   const quiz: QuizOption[] = generated ?? fixedQuiz(s, c.kind);
-  const question = generated ? t('lesson_genuine_q').replace('{brand}', c.genuine ?? '') : t(`lesson_${c.kind}_q`);
+  const question = generated ? t('lesson_genuine_q').replace('{brand}', brandName(c.genuine ?? '')) : t(`lesson_${c.kind}_q`);
   let recorded = false;
 
   const frame = (n: number): HTMLElement => {
@@ -128,7 +138,9 @@ export function renderLesson(
         for (const x of opts.querySelectorAll('button')) x.setAttribute('aria-pressed', 'false');
         b.setAttribute('aria-pressed', 'true');
         b.classList.add('wrong');
-        why.textContent = t(`lesson_${c.kind}_why`);
+        why.textContent = generated
+          ? t('lesson_genuine_why').replace('{domain}', c.genuine ?? '').replace('{brand}', brandName(c.genuine ?? ''))
+          : t(`lesson_${c.kind}_why`);
       });
       b.setAttribute('aria-pressed', 'false');
       opts.append(b);

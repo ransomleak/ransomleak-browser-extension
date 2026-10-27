@@ -177,6 +177,7 @@
   "lesson_open_course": "Open the course",
   "lesson_real_one": "The real site",
   "lesson_genuine_q": "Which one is really {brand}?",
+  "lesson_genuine_why": "Only {domain} is {brand}'s own address. The others add or swap characters to look similar.",
   "lesson_step": "Step {n} of {total}",
   "lesson_back_warning": "Back to warning"
 }

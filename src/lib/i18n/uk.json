@@ -177,6 +177,7 @@
   "lesson_open_course": "Відкрити курс",
   "lesson_real_one": "Справжній сайт",
   "lesson_genuine_q": "Яка адреса справді належить {brand}?",
+  "lesson_genuine_why": "Лише {domain} є власною адресою {brand}. Інші додають або замінюють символи, щоб здаватися схожими.",
   "lesson_step": "Крок {n} з {total}",
   "lesson_back_warning": "Назад до попередження"
 }

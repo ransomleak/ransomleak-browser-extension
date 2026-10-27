@@ -190,3 +190,6 @@ button.option {
 }
 button.option:hover { border-color: var(--fg-3); }
 button.option.wrong { border-color: var(--sev); background: var(--sev-soft); }
+
+/* Lesson steps move focus to the heading for screen readers; it is not an interactive control. */
+h1[tabindex="-1"]:focus { outline: none; }

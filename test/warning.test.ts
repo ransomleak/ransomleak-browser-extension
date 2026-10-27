@@ -81,12 +81,12 @@ describe('lesson inside the warning page', () => {
     next();
     expect(document.querySelectorAll('.habits li')).toHaveLength(2);
     next();
-    expect(document.querySelector('h1')!.textContent).toBe('Which one is really paypal.com?');
+    expect(document.querySelector('h1')!.textContent).toBe('Which one is really PayPal?');
     const opts = options();
     expect(opts).toHaveLength(3);
     expect(opts.map((o) => o.textContent)).not.toContain('paypa1-login.com');
     opts.find((o) => o.textContent !== 'paypal.com')!.click();
-    expect(document.querySelector('.why')!.textContent).toBe(en.lesson_lookalike_why);
+    expect(document.querySelector('.why')!.textContent).toBe("Only paypal.com is PayPal's own address. The others add or swap characters to look similar.");
     expect(document.querySelector('.why')!.getAttribute('role')).toBe('status');
     expect(options().filter((o) => o.getAttribute('aria-pressed') === 'true')).toHaveLength(1);
     expect(options().filter((o) => o.getAttribute('aria-pressed') === 'false')).toHaveLength(2);
@@ -162,5 +162,14 @@ describe('standalone lesson', () => {
   it('unknown lesson kinds are not standalone', () => {
     expect(renderStandalone(document, '?lesson=lookalike&d=a.com', 'en', vi.fn(), vi.fn())).toBe(false);
     expect(renderStandalone(document, '', 'en', vi.fn(), vi.fn())).toBe(false);
+  });
+});
+
+describe('brandName', () => {
+  it('names the brand, with known spellings', async () => {
+    const { brandName } = await import('../src/warning/lesson.ts');
+    expect(brandName('microsoft.com')).toBe('Microsoft');
+    expect(brandName('paypal.com')).toBe('PayPal');
+    expect(brandName('acme.co.uk')).toBe('Acme');
   });
 });
