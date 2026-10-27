@@ -44,3 +44,49 @@ describe('lesson content', () => {
     expect(lessonKindFor('download')).toBe('download');
   });
 });
+
+import { DEFAULT_BRAND_OWNERS } from '../src/detect/brands';
+import { fixedQuiz, genuineDomain, lookalikeQuiz } from '../src/lesson/quiz';
+import { stringsFor } from '../src/lib/i18n';
+
+function seeded(seed: number): () => number {
+  let s = seed;
+  return () => ((s = (s * 1664525 + 1013904223) % 4294967296) / 4294967296);
+}
+
+describe('lesson quiz', () => {
+  it('genuineDomain resolves brand keys and protected domains', () => {
+    expect(genuineDomain('microsoft', DEFAULT_BRAND_OWNERS, [])).toBe('microsoft.com');
+    expect(genuineDomain('acme.com', {}, ['acme.com'])).toBe('acme.com');
+    expect(genuineDomain('nobrand', {}, [])).toBeNull();
+  });
+
+  it('lookalikeQuiz never offers the person\'s own domain and has one correct answer', () => {
+    const q = lookalikeQuiz('microsoft.com', 'micros0ft-login.com');
+    expect(new Set(q.map((o) => o.text)).size).toBe(3);
+    expect(q.filter((o) => o.correct)).toHaveLength(1);
+    expect(q.find((o) => o.correct)!.text).toBe('microsoft.com');
+    expect(q.some((o) => o.text === 'micros0ft-login.com')).toBe(false);
+  });
+
+  it('lookalikeQuiz keeps three distinct options for very short domains and colliding case domains', () => {
+    for (const [g, c] of [['x.com', 'x-login.com'], ['x.com', 'x-secure.com'], ['x.com', 'x.com-login.co'], ['paypal.com', 'paypa1.com'], ['a.io', 'a-secure.io']] as Array<[string, string]>) {
+      const q = lookalikeQuiz(g, c, seeded(3));
+      expect(new Set(q.map((o) => o.text)).size, g + c).toBe(3);
+      expect(q.some((o) => o.text === c)).toBe(false);
+      expect(q.filter((o) => o.correct).map((o) => o.text)).toEqual([g]);
+    }
+  });
+
+  it('is deterministic with a seeded rand', () => {
+    expect(lookalikeQuiz('microsoft.com', 'micros0ft-login.com', seeded(7))).toEqual(
+      lookalikeQuiz('microsoft.com', 'micros0ft-login.com', seeded(7)),
+    );
+  });
+
+  it('fixedQuiz returns a/w1/w2 with one correct', () => {
+    const q = fixedQuiz(stringsFor('en'), 'download', seeded(1));
+    expect(q).toHaveLength(3);
+    expect(q.filter((o) => o.correct)).toHaveLength(1);
+  });
+});
