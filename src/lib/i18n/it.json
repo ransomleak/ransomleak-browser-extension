@@ -118,7 +118,7 @@
   "notif_due_body": "{title} scade entro un giorno.",
   "lesson_lookalike_title": "Riconoscere un indirizzo ingannevole",
   "lesson_lookalike_what": "L'indirizzo che hai aperto imita un sito di cui ti fidi, con piccole modifiche facili da non notare. Pagine come questa servono a raccogliere password e pagamenti.",
-  "lesson_lookalike_habit1": "Controlla il dominio, cioè la parte subito prima della prima barra singola. Piccole sostituzioni, come rn al posto di m o 0 al posto di o, si nascondono lì.",
+  "lesson_lookalike_habit1": "Controlla il dominio, cioè la parte tra https:// e la barra (/) successiva. Piccole sostituzioni, come rn al posto di m o 0 al posto di o, si nascondono lì.",
   "lesson_lookalike_habit2": "Se hai dubbi, digita tu l'indirizzo o usa il segnalibro invece di un link.",
   "lesson_lookalike_q": "Quale indirizzo appartiene a PayPal?",
   "lesson_lookalike_a": "paypal.com",

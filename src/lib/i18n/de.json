@@ -118,7 +118,7 @@
   "notif_due_body": "{title} ist innerhalb eines Tages fällig.",
   "lesson_lookalike_title": "Ähnliche Adressen erkennen",
   "lesson_lookalike_what": "Die geöffnete Adresse ahmt eine Seite nach, der Sie vertrauen, mit kleinen Änderungen, die leicht übersehen werden. Solche Seiten sollen Passwörter und Zahlungsdaten abgreifen.",
-  "lesson_lookalike_habit1": "Prüfen Sie die Domain, also den Teil direkt vor dem ersten einzelnen Schrägstrich. Kleine Vertauschungen wie rn statt m oder 0 statt o verstecken sich dort.",
+  "lesson_lookalike_habit1": "Prüfen Sie die Domain, also den Teil zwischen https:// und dem nächsten /. Kleine Vertauschungen wie rn statt m oder 0 statt o verstecken sich dort.",
   "lesson_lookalike_habit2": "Wenn Sie unsicher sind, tippen Sie die Adresse selbst ein oder nutzen Sie Ihr Lesezeichen statt eines Links.",
   "lesson_lookalike_q": "Welche Adresse gehört zu PayPal?",
   "lesson_lookalike_a": "paypal.com",

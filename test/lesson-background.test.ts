@@ -103,7 +103,15 @@ describe('lesson background', () => {
     const r = await send(chrome.runtime.onMessage, { type: 'open-lesson', kind: 'consent' },
       { id: 'extid', url: 'https://accounts.google.com/o/oauth2/auth?x=1', tab: { id: 3 }, frameId: 0 });
     expect(r).toEqual({ ok: true });
-    expect(chrome.tabs.create).toHaveBeenCalledWith({ url: `${WARNING}?lesson=consent&d=accounts.google.com` });
+    expect(chrome.tabs.create).toHaveBeenCalledWith({ url: `${WARNING}?lesson=consent&d=accounts.google.com&l=en` });
+  });
+
+  it('open-lesson carries the account locale when valid', async () => {
+    await boot();
+    await chrome.storage.local.set({ auth: { ...AUTH, locale: 'uk' } });
+    await send(chrome.runtime.onMessage, { type: 'open-lesson', kind: 'consent' },
+      { id: 'extid', url: 'https://accounts.google.com/o/oauth2/auth', tab: { id: 3 }, frameId: 0 });
+    expect(chrome.tabs.create).toHaveBeenCalledWith({ url: `${WARNING}?lesson=consent&d=accounts.google.com&l=uk` });
   });
 
   it('open-lesson is ignored from an extension page, a subframe, or with another kind', async () => {

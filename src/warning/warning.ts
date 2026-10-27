@@ -110,9 +110,12 @@ export function renderStandalone(doc: Document, search: string, locale: string, 
   return true;
 }
 
+const LOCALE_CODES = ['en', 'de', 'fr', 'it', 'nl', 'uk'];
+
 async function main(): Promise<void> {
   const send = (m: unknown): Promise<unknown> => chrome.runtime.sendMessage(m);
-  const locale = (navigator.language || 'en').slice(0, 2).toLowerCase();
+  const l = new URLSearchParams(location.search).get('l');
+  const locale = l && LOCALE_CODES.includes(l) ? l : (navigator.language || 'en').slice(0, 2).toLowerCase();
   if (renderStandalone(doc(), location.search, locale, send, () => window.close())) return;
   const info = (await send({ type: 'warning-info' })) as WarningInfo | { error: string } | undefined;
   if (!info || 'error' in info) {

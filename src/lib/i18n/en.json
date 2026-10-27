@@ -118,7 +118,7 @@
   "notif_due_body": "{title} is due within a day.",
   "lesson_lookalike_title": "Spotting a look-alike address",
   "lesson_lookalike_what": "The address you opened imitates a site you trust, with small changes that are easy to miss. Pages like this are built to collect passwords and payments.",
-  "lesson_lookalike_habit1": "Check the domain, the part right before the first single slash. Small swaps, like rn for m or 0 for o, can hide there.",
+  "lesson_lookalike_habit1": "Check the domain, the part between https:// and the next /. Small swaps, like rn for m or 0 for o, can hide there.",
   "lesson_lookalike_habit2": "If you are not sure, type the address yourself or use your saved bookmark instead of a link.",
   "lesson_lookalike_q": "Which address belongs to PayPal?",
   "lesson_lookalike_a": "paypal.com",

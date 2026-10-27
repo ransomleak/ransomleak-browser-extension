@@ -86,6 +86,9 @@ describe('lesson inside the warning page', () => {
     expect(opts.map((o) => o.textContent)).not.toContain('paypa1-login.com');
     opts.find((o) => o.textContent !== 'paypal.com')!.click();
     expect(document.querySelector('.why')!.textContent).toBe(en.lesson_lookalike_why);
+    expect(document.querySelector('.why')!.getAttribute('role')).toBe('status');
+    expect(options().filter((o) => o.getAttribute('aria-pressed') === 'true')).toHaveLength(1);
+    expect(options().filter((o) => o.getAttribute('aria-pressed') === 'false')).toHaveLength(2);
     expect(options().every((o) => !o.disabled)).toBe(true);
     expect(act).not.toHaveBeenCalledWith('lesson-done');
     options().find((o) => o.textContent === 'paypal.com')!.click();
@@ -147,6 +150,13 @@ describe('standalone lesson', () => {
     finish();
     expect(document.querySelector('h1')!.textContent).toBe(en.lesson_done_title);
     expect(send).not.toHaveBeenCalled();
+  });
+  it('back-to-warning arrow is aria-hidden and the label stays in the button', () => {
+    render(document, { ...base, learn: true, lesson: { kind: 'lookalike', genuine: 'paypal.com', deny: [], course: false } }, stringsFor('en'), vi.fn());
+    click('[data-action=learn]');
+    const arrow = document.querySelector('.back-warning > span')!;
+    expect(arrow.getAttribute('aria-hidden')).toBe('true');
+    expect(document.querySelector('.back-warning')!.textContent).toContain(en.lesson_back_warning);
   });
   it('unknown lesson kinds are not standalone', () => {
     expect(renderStandalone(document, '?lesson=lookalike&d=a.com', 'en', vi.fn(), vi.fn())).toBe(false);

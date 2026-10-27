@@ -58,7 +58,10 @@ export function renderLesson(
     const main = el(doc, 'main', undefined, 'lesson');
     main.append(brandMark(doc));
     if (backToWarning && !c.standalone) {
-      const back = el(doc, 'button', `← ${s.lesson_back_warning}`, 'link back-warning');
+      const back = el(doc, 'button', undefined, 'link back-warning');
+      const arrow = el(doc, 'span', '←');
+      arrow.setAttribute('aria-hidden', 'true');
+      back.append(arrow, ` ${s.lesson_back_warning}`);
       back.type = 'button';
       back.addEventListener('click', backToWarning);
       main.append(back);
@@ -131,9 +134,12 @@ export function renderLesson(
     for (const o of quiz!) {
       const b = btn(o.text, 'option', () => {
         if (o.correct) { step4(); return; }
+        for (const x of opts.querySelectorAll('button')) x.setAttribute('aria-pressed', 'false');
+        b.setAttribute('aria-pressed', 'true');
         b.classList.add('wrong');
         why.textContent = t(`lesson_${c.kind}_why`);
       });
+      b.setAttribute('aria-pressed', 'false');
       opts.append(b);
     }
     main.append(opts, why);

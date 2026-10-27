@@ -1,7 +1,7 @@
 // In-browser lessons: the completion event and the standalone lesson tab (consent / AI paste).
 import { LESSON_KINDS, type LessonKind } from '../lesson/content.ts';
 import { enqueue, flush } from './events.ts';
-import { claimOnce } from './store.ts';
+import { claimOnce, getAuth } from './store.ts';
 
 export const LESSON_SEEN_KEY = 'lessonSeen';
 const LESSON_SEEN_MS = 36 * 60 * 60 * 1000;
@@ -40,6 +40,8 @@ export async function openLesson(msg: { kind?: unknown }, sender: chrome.runtime
   const page = new URL(chrome.runtime.getURL(WARNING_PATH));
   page.searchParams.set('lesson', msg.kind);
   page.searchParams.set('d', u.hostname);
+  const locale = (await getAuth())?.locale;
+  if (locale && (['en', 'de', 'fr', 'it', 'nl', 'uk'] as string[]).includes(locale)) page.searchParams.set('l', locale);
   await chrome.tabs.create({ url: page.href });
   return { ok: true };
 }

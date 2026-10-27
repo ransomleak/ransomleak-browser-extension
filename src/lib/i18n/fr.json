@@ -118,7 +118,7 @@
   "notif_due_body": "{title} doit être terminée sous un jour.",
   "lesson_lookalike_title": "Repérer une adresse trompeuse",
   "lesson_lookalike_what": "L'adresse que vous avez ouverte imite un site de confiance, avec de petites modifications faciles à manquer. Ces pages sont conçues pour récupérer des mots de passe et des paiements.",
-  "lesson_lookalike_habit1": "Vérifiez le domaine, la partie juste avant la première barre oblique simple. De petites substitutions, comme rn à la place de m ou 0 à la place de o, s'y cachent.",
+  "lesson_lookalike_habit1": "Vérifiez le domaine, la partie entre https:// et la barre oblique suivante (/). De petites substitutions, comme rn à la place de m ou 0 à la place de o, s'y cachent.",
   "lesson_lookalike_habit2": "En cas de doute, saisissez vous-même l'adresse ou utilisez votre favori plutôt qu'un lien.",
   "lesson_lookalike_q": "Quelle adresse appartient à PayPal ?",
   "lesson_lookalike_a": "paypal.com",
