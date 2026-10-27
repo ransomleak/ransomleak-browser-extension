@@ -73,6 +73,7 @@ describe('lesson inside the warning page', () => {
     expect(act).not.toHaveBeenCalled();
     expect(document.querySelector('main > .brand')).not.toBeNull();
     expect(document.querySelectorAll('.dots i.on')).toHaveLength(1);
+    expect(document.activeElement).toBe(document.querySelector('h1'));
     expect(document.querySelector('.case mark')!.textContent).toBe('paypa1');
     expect(document.querySelector('.real')!.textContent).toBe('paypal.com');
     expect(document.body.textContent).toContain(en.lesson_real_one);
@@ -91,6 +92,7 @@ describe('lesson inside the warning page', () => {
     expect(act.mock.calls.filter((c) => c[0] === 'lesson-done')).toHaveLength(1);
     expect(document.querySelector('h1')!.textContent).toBe(en.lesson_done_title);
     expect([...document.querySelectorAll('.actions button')].map((b) => b.textContent)).toEqual([en.lesson_back_safety, en.lesson_open_course]);
+    expect(document.activeElement).toBe(document.querySelector('h1'));
     click('button.secondary');
     expect(act).toHaveBeenCalledWith('learn');
     click('button.primary');

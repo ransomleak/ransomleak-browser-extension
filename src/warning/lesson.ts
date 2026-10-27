@@ -72,7 +72,8 @@ export function renderLesson(
   };
   const show = (main: HTMLElement): void => {
     doc.body.replaceChildren(main);
-    main.querySelector<HTMLElement>('button.primary, .options button')?.focus();
+    const h = main.querySelector('h1');
+    if (h) { h.tabIndex = -1; h.focus(); }
   };
   const actions = (main: HTMLElement, ...btns: HTMLButtonElement[]): void => {
     const row = el(doc, 'div', undefined, 'actions');

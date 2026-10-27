@@ -115,4 +115,16 @@ describe('lesson background', () => {
       { id: 'extid', url: 'https://accounts.google.com/', tab: { id: 3 }, frameId: 0 });
     expect(chrome.tabs.create).not.toHaveBeenCalled();
   });
+
+  it('download lesson-done records the stored source domain once, value download', async () => {
+    await boot();
+    await chrome.storage.session.set({ 'download:42': { id: 42, filename: 'setup.exe', domain: 'acrne.com', category: 'executable' } });
+    const sender = { id: 'extid', url: `${WARNING}?k=download&dl=42`, tab: { id: 100 } };
+    const info = (await send(chrome.runtime.onMessage, { type: 'warning-info' }, sender)) as any;
+    expect(info.lesson).toEqual({ kind: 'download', genuine: null, deny: [], course: false });
+    await send(chrome.runtime.onMessage, { type: 'warning-action', action: 'lesson-done', domain: 'forged.com' }, sender);
+    await send(chrome.runtime.onMessage, { type: 'warning-action', action: 'lesson-done' }, sender);
+    expect(lessons()).toHaveLength(1);
+    expect(lessons()[0]).toMatchObject({ domain: 'acrne.com', value: 'download' });
+  });
 });
