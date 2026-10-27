@@ -78,7 +78,8 @@ export type Signal =
   | 'browser.warning_overridden'
   | 'browser.password_entry_warned' // removed in 1.1.0; kept so older history entries still type
   | 'browser.risky_download_warned'
-  | 'browser.ai_sensitive_paste';
+  | 'browser.ai_sensitive_paste'
+  | 'browser.lesson_completed';
 
 export interface WireEvent {
   id: string;

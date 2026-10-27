@@ -10,6 +10,9 @@ import { captureOAuthRequest, oauthRequestKey } from './oauth-request.ts';
 import { activationDone, claimActivation, forgetPrerenders, prerendersOf, rememberPrerender } from './prerender.ts';
 import { apiBaseFor } from './config.ts';
 import { enqueue, enqueueAll, flush } from './events.ts';
+import { lessonKindFor } from '../lesson/content.ts';
+import { genuineDomain } from '../lesson/quiz.ts';
+import { recordLesson } from './lesson.ts';
 import { loadFeed } from './policy.ts';
 import {
   actionFor, chromeLocalStore, claimOnce, pruneOnce, getAuth, getAuthAndPolicy, getLocal, getPolicy, getSession, locked, modeOf, setLocal, setSession,
@@ -29,6 +32,8 @@ interface Pending {
   mode: 'warn' | 'block';
   highlight: [number, number];
   signal: Signal;
+  /** The look-alike hit's matched brand key / protected domain, or the brand-watch entry. */
+  matched?: string;
 }
 
 const RANK: Record<Mode, number> = { off: 0, log: 1, warn: 2, block: 3 };
@@ -166,7 +171,7 @@ export async function judge(d: Nav, phase: 'before' | 'committed'): Promise<void
     if (c.bloomHit && phase === 'committed') await bump('nrdBloomHitsUnconfirmed'); // once per navigation
     return rememberSafe(d.tabId, d.url);
   }
-  const { h, domain, kind, key, signals, mode } = c.verdict;
+  const { h, domain, kind, key, signals, mode, matched } = c.verdict;
   // Lets the download check attribute a script-built (blob:/data:) download to the flagged page in view.
   if (phase === 'committed') await setSession({ recentFlagged: { domain, at: Date.now() } }); // = RECENT_FLAGGED_KEY
 
@@ -194,6 +199,7 @@ export async function judge(d: Nav, phase: 'before' | 'committed'): Promise<void
   const start = h.sharedHost ? domain.length - h.registrable.length : 0;
   const pending: Pending = {
     url: d.url, domain, key, kind, mode, highlight: [start, start + h.label.length], signal: signals[0]!.signal,
+    ...(matched ? { matched } : {}),
   };
   await setSession({ [`pending:${d.tabId}`]: pending });
   const page = new URL(chrome.runtime.getURL(WARNING_PATH));
@@ -212,6 +218,8 @@ export interface Verdict {
   signals: { signal: Signal; value?: string; mode: Mode }[];
   /** The strictest mode among the fired signals. */
   mode: Mode;
+  /** Look-alike hit's matched brand key / protected domain, or the brand-watch entry. */
+  matched?: string;
 }
 
 /**
@@ -276,7 +284,8 @@ export async function classify(url: string, policy: Policy, tenantOrigin?: strin
   const mode = signals.reduce<Mode>((m, s) => (RANK[s.mode] > RANK[m] ? s.mode : m), 'off');
   // A reported host is judged per host: continuing on one must not silence its sibling hosts.
   const key = kind === 'known' ? h.host : kind === 'watch' ? watched! : domain;
-  return { verdict: { h, domain, kind, key, signals, mode }, bloomHit };
+  const matched = kind === 'watch' ? watched : hit?.matched;
+  return { verdict: { h, domain, kind, key, signals, mode, ...(matched ? { matched } : {}) }, bloomHit };
 }
 
 /** True when the host (or the host without `www.`) is in the known-bad feed. */
@@ -314,7 +323,15 @@ export async function handleWarning(msg: { type: string; action?: unknown }, sen
   const learn = learnUrl(auth?.tenantOrigin, policy.jit?.[p.signal], policy.links);
 
   if (msg.type === 'warning-info') {
-    return { domain: p.domain, kind: p.kind, mode: p.mode, highlight: p.highlight, learn: !!learn, locale: auth?.locale ?? 'en' };
+    const lessonKind = lessonKindFor(p.kind);
+    const owners = policy.brandOwners ?? DEFAULT_BRAND_OWNERS;
+    const lookalike = lessonKind === 'lookalike' && !!p.matched;
+    const genuine = lookalike ? genuineDomain(p.matched!, owners, policy.protected?.domains) : null;
+    const deny = lookalike ? [...(owners[p.matched!.toLowerCase()] ?? [])] : [];
+    return {
+      domain: p.domain, kind: p.kind, mode: p.mode, highlight: p.highlight, learn: !!learn, locale: auth?.locale ?? 'en',
+      lesson: { kind: lessonKind, genuine, deny, course: !!learn },
+    };
   }
   switch (msg.action) {
     case 'back': {
@@ -344,6 +361,8 @@ export async function handleWarning(msg: { type: string; action?: unknown }, sen
       await chrome.tabs.create({ url: learn });
       return { ok: true };
     }
+    case 'lesson-done':
+      return { ok: await recordLesson(lessonKindFor(p.kind), p.domain) };
     default:
       return { ok: false };
   }

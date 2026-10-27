@@ -11,6 +11,7 @@ import {
   aiPasteConfig, aiPasteEvent, extraModes, removeLegacyPasswordScript, siteReport, syncAiPasteScript,
 } from './protect.ts';
 import { forgetTab, handleWarning, WARNING_PATH, onBeforeNavigate, onCommitted, onTabUpdated, pruneThrottle } from './navigation.ts';
+import { lessonDone, openLesson } from './lesson.ts';
 import { FEEDS, feedInfo, feedStale, refreshFeed, refreshFeeds, syncPolicy } from './policy.ts';
 import { dismissRecommendation, meSignals } from './signals.ts';
 import { remindersActive, restoreBadge, storedTodo, syncTodo, wireNotifications } from './todo.ts';
@@ -135,6 +136,11 @@ async function handleMessage(msg: Msg, sender: chrome.runtime.MessageSender): Pr
       if (dl) return handleDownloadWarning(msg as { type: string; action?: unknown }, dl.tabId, dl.id);
       return handleWarning(msg as { type: string; action?: unknown }, sender);
     }
+    case 'open-lesson':
+      if (!sender.tab || fromExtensionPage) return undefined;
+      return openLesson(msg as { kind?: unknown }, sender);
+    case 'lesson-done':
+      return fromExtensionPage ? lessonDone(msg as { kind?: unknown; domain?: unknown }) : undefined;
     case 'consent':
       if (!sender.tab || fromExtensionPage) return undefined;
       await handleConsent(msg as { info?: unknown; risky?: unknown }, sender);
