@@ -14,8 +14,8 @@ for (const f of js) {
   const src = readFileSync(join(dist, f), 'utf8');
   if (/\bimport\s*[({"'`]|\bimport\s+[\w{*]|\bexport\s/.test(src)) problems.push(`${f} has import/export: not self-contained`);
 }
-// The password-entry and AI paste scripts are registered at runtime (chrome.scripting), so they are not in the manifest.
-for (const file of ['content-password.js', 'content-aipaste.js']) {
+// The AI paste script is registered at runtime (chrome.scripting), so it is not in the manifest.
+for (const file of ['content-aipaste.js']) {
   if (!existsSync(join(dist, file))) problems.push(`${file} missing`);
   else {
     const src = readFileSync(join(dist, file), 'utf8');

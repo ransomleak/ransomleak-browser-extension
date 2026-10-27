@@ -6,9 +6,6 @@ import { buildManifest } from './src/manifest.ts';
 
 const OUT_DIR = 'dist';
 const CONTENT_FILE = 'content-consent.js';
-/** Registered at runtime (chrome.scripting) once the optional host permission is granted; see protect.ts. */
-const PASSWORD_FILE = 'content-password.js';
-const PASSWORD_ENTRY = 'src/content/password/index.ts';
 /** Registered at runtime on AI tool hosts only, when the AI paste detector is on; see protect.ts. */
 const AIPASTE_FILE = 'content-aipaste.js';
 const AIPASTE_ENTRY = 'src/content/aipaste/index.ts';
@@ -35,7 +32,6 @@ function contentScriptIife(entry: string, contentScripts: unknown[]): Plugin {
         },
       });
       await iife(entry, 'rlConsent', CONTENT_FILE);
-      await iife(PASSWORD_ENTRY, 'rlPassword', PASSWORD_FILE);
       await iife(AIPASTE_ENTRY, 'rlAiPaste', AIPASTE_FILE);
       const path = resolve(OUT_DIR, 'manifest.json');
       const manifest = JSON.parse(readFileSync(path, 'utf8'));

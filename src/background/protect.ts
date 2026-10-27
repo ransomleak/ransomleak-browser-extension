@@ -1,55 +1,32 @@
-// Extra protection (optional permissions): the password-entry content script registration, its
-// check/action messages, and the popup's "Report this site" call. Sites are judged by navigation.ts's
-// classify(), the same classifier the navigation warnings use.
+// Extra protection (optional permissions): the AI paste content script registration and its messages,
+// and the popup's "Report this site" call.
 import { parse } from 'tldts';
-import { DEFAULT_AI_TOOLS, matchAiTool, sanitizeAiTools } from '../detect/ai-tools.ts';
+import { aiToolMatches, DEFAULT_AI_TOOLS, matchAiTool, sanitizeAiTools } from '../detect/ai-tools.ts';
 import { PASTE_CATEGORIES, type PasteCategory } from '../detect/sensitive-paste.ts';
-import { stringsFor } from '../lib/i18n.ts';
 import { indexFor } from './ai-usage.ts';
 import { AuthPausedError, errorCode, postJson } from './api.ts';
 import { enqueue, flush } from './events.ts';
-import { classify } from './navigation.ts';
 import {
-  aiPasteModeOf, claimOnce, extraModeOf, getAuthAndPolicy, getPolicy, getSession, locked, setSession, THROTTLE_MS,
+  aiPasteModeOf, claimOnce, extraModeOf, getAuthAndPolicy, getPolicy, THROTTLE_MS,
   type AiPasteMode, type ExtraMode, type Policy,
 } from './store.ts';
 
-import { EXTRA_ORIGINS } from '../manifest.ts';
+import { AI_ORIGINS } from '../manifest.ts';
 
-export { EXTRA_ORIGINS };
-export const PASSWORD_SCRIPT_ID = 'rl-password';
-/** Built as a self-contained IIFE next to the manifest (vite.config.ts). */
-export const PASSWORD_SCRIPT_FILE = 'content-password.js';
+export { AI_ORIGINS };
+/** The password-entry script of 1.0–1.1 pre-releases; unregistered on start (the feature was removed). */
+export const LEGACY_PASSWORD_SCRIPT_ID = 'rl-password';
 
 export const AIPASTE_SCRIPT_ID = 'rl-aipaste';
 /** Built as a self-contained IIFE next to the manifest (vite.config.ts). */
 export const AIPASTE_SCRIPT_FILE = 'content-aipaste.js';
 
-export async function extraModes(): Promise<{ passwordEntry: ExtraMode; downloads: ExtraMode; aiPaste: AiPasteMode }> {
+export async function extraModes(): Promise<{ downloads: ExtraMode; aiPaste: AiPasteMode }> {
   const p = await getPolicy();
   return {
-    passwordEntry: extraModeOf(p.detectors?.passwordEntry),
     downloads: extraModeOf(p.detectors?.downloads),
     aiPaste: aiPasteModeOf(p.detectors?.aiPaste),
   };
-}
-
-/**
- * Registers the password-entry content script while the optional host permission is granted, and
- * unregisters it once revoked. Idempotent; runs on every worker start and on permission changes.
- */
-export async function syncPasswordScript(): Promise<void> {
-  if (!chrome.scripting?.registerContentScripts || !chrome.permissions?.contains) return;
-  const granted = await chrome.permissions.contains({ origins: EXTRA_ORIGINS }).catch(() => false);
-  const existing = await chrome.scripting.getRegisteredContentScripts({ ids: [PASSWORD_SCRIPT_ID] }).catch(() => []);
-  if (granted && !existing.length) {
-    await chrome.scripting.registerContentScripts([{
-      id: PASSWORD_SCRIPT_ID, matches: EXTRA_ORIGINS, js: [PASSWORD_SCRIPT_FILE],
-      runAt: 'document_idle', allFrames: false, persistAcrossSessions: true,
-    }]);
-  } else if (!granted && existing.length) {
-    await chrome.scripting.unregisterContentScripts({ ids: [PASSWORD_SCRIPT_ID] });
-  }
 }
 
 /**
@@ -57,15 +34,16 @@ export async function syncPasswordScript(): Promise<void> {
  * plus its subdomains when the entry is a registrable domain (same rule as matchAiTool). Sorted, unique.
  */
 export function aiPasteMatches(policy: Policy): string[] {
-  const out = new Set<string>();
-  for (const t of sanitizeAiTools(policy.aiTools) ?? DEFAULT_AI_TOOLS) {
-    for (const d of t.domains) {
-      if (!/^[a-z0-9.-]+$/.test(d)) continue;
-      out.add(`https://${d}/*`);
-      if (parse(d).domain === d) out.add(`https://*.${d}/*`);
-    }
-  }
-  return [...out].sort();
+  // Only hosts the manifest can grant: a policy tool outside the built-in list waits for a release.
+  const grantable = new Set(AI_ORIGINS);
+  return aiToolMatches(sanitizeAiTools(policy.aiTools) ?? DEFAULT_AI_TOOLS).filter((m) => grantable.has(m));
+}
+
+/** Drops the removed password-entry script left registered by an older version. */
+export async function removeLegacyPasswordScript(): Promise<void> {
+  if (!chrome.scripting?.unregisterContentScripts) return;
+  const existing = await chrome.scripting.getRegisteredContentScripts({ ids: [LEGACY_PASSWORD_SCRIPT_ID] }).catch(() => []);
+  if (existing.length) await chrome.scripting.unregisterContentScripts({ ids: [LEGACY_PASSWORD_SCRIPT_ID] }).catch(() => {});
 }
 
 /**
@@ -75,7 +53,7 @@ export function aiPasteMatches(policy: Policy): string[] {
  */
 export async function syncAiPasteScript(): Promise<void> {
   if (!chrome.scripting?.registerContentScripts || !chrome.permissions?.contains) return;
-  const granted = await chrome.permissions.contains({ origins: EXTRA_ORIGINS }).catch(() => false);
+  const granted = await chrome.permissions.contains({ origins: AI_ORIGINS }).catch(() => false);
   const policy = await getPolicy();
   const on = granted && aiPasteModeOf(policy.detectors?.aiPaste) !== 'off';
   const existing = await chrome.scripting.getRegisteredContentScripts({ ids: [AIPASTE_SCRIPT_ID] }).catch(() => []);
@@ -99,66 +77,6 @@ const hostOf = (url: string): string | null => {
     return null;
   }
 };
-
-export type PasswordCheck = { show: false } | { show: true; text: { title: string; body: string; back: string; cont: string }; lang: string };
-
-/**
- * 'password-check' from the content script (top frame only), sent on the first focus or keystroke in a
- * password field. The script never sends field values; only the frame URL Chrome attaches is used.
- */
-export async function passwordCheck(sender: chrome.runtime.MessageSender): Promise<PasswordCheck> {
-  const tabId = sender.tab?.id;
-  const host = sender.url ? hostOf(sender.url) : null;
-  if (typeof tabId !== 'number' || sender.frameId !== 0 || !host || !sender.url) return { show: false };
-  const { auth, policy } = await getAuthAndPolicy();
-  if (!auth || auth.needsReauth) return { show: false };
-  const mode = extraModeOf(policy.detectors?.passwordEntry);
-  if (mode === 'off') return { show: false };
-  const tk = `${tabId}|${host}`;
-  if ((await getSession<Record<string, true>>('pwAllow'))?.[tk]) return { show: false };
-  const verdict = (await classify(sender.url, policy, auth.tenantOrigin))?.verdict;
-  if (!verdict) return { show: false };
-  const first = await locked(async () => {
-    const seen = (await getSession<Record<string, string>>('pwSeen')) ?? {};
-    if (seen[tk]) return false;
-    seen[tk] = verdict.domain;
-    await setSession({ pwSeen: seen });
-    return true;
-  });
-  if (first) {
-    await enqueue('browser.password_entry_warned', verdict.domain, mode === 'warn' ? 'warned' : 'logged');
-    void flush();
-  }
-  if (mode === 'log') return { show: false };
-  const s = stringsFor(auth.locale);
-  return { show: true, lang: auth.locale, text: { title: s.pw_title, body: s.pw_body, back: s.back, cont: s.pw_continue } };
-}
-
-/** 'password-action' {action: 'back' | 'continue'}: records the choice; Continue silences this tab+host for the session. */
-export async function passwordAction(msg: { action?: unknown }, sender: chrome.runtime.MessageSender): Promise<{ ok: boolean; history?: boolean }> {
-  const tabId = sender.tab?.id;
-  const host = sender.url ? hostOf(sender.url) : null;
-  if (typeof tabId !== 'number' || sender.frameId !== 0 || !host) return { ok: false };
-  const tk = `${tabId}|${host}`;
-  const domain = (await getSession<Record<string, string>>('pwSeen'))?.[tk];
-  if (!domain || (msg.action !== 'back' && msg.action !== 'continue')) return { ok: false };
-  if (msg.action === 'continue') {
-    await locked(async () => {
-      const allow = (await getSession<Record<string, true>>('pwAllow')) ?? {};
-      allow[tk] = true;
-      await setSession({ pwAllow: allow });
-    });
-    await enqueue('browser.password_entry_warned', domain, 'proceeded');
-    void flush();
-    return { ok: true };
-  }
-  await enqueue('browser.password_entry_warned', domain, 'went_back');
-  void flush();
-  const safe = await getSession<string>(`lastSafe:${tabId}`);
-  if (!safe) return { ok: true, history: true }; // the page goes back in its own history
-  await chrome.tabs.update(tabId, { url: safe });
-  return { ok: true };
-}
 
 /** storage.local claimOnce map: `${toolId}|${category}|${action}` -> time recorded. */
 export const AIPASTE_SEEN_KEY = 'aiPasteSeen';

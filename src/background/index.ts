@@ -8,7 +8,7 @@ import { flush } from './events.ts';
 import { ensureAlarms, sendHeartbeat } from './heartbeat.ts';
 import { handleDownloadWarning, wireDownloads } from './downloads.ts';
 import {
-  aiPasteConfig, aiPasteEvent, extraModes, passwordAction, passwordCheck, siteReport, syncAiPasteScript, syncPasswordScript,
+  aiPasteConfig, aiPasteEvent, extraModes, removeLegacyPasswordScript, siteReport, syncAiPasteScript,
 } from './protect.ts';
 import { forgetTab, handleWarning, WARNING_PATH, onBeforeNavigate, onCommitted, onTabUpdated, pruneThrottle } from './navigation.ts';
 import { FEEDS, feedInfo, feedStale, refreshFeed, refreshFeeds, syncPolicy } from './policy.ts';
@@ -78,7 +78,7 @@ function downloadWarning(sender: chrome.runtime.MessageSender): { tabId: number;
 async function syncExtra(): Promise<void> {
   wireDownloads();
   wireNotifications();
-  await syncPasswordScript();
+  await removeLegacyPasswordScript();
   await syncAiPasteScript();
 }
 
@@ -113,12 +113,6 @@ async function handleMessage(msg: Msg, sender: chrome.runtime.MessageSender): Pr
       wireNotifications();
       await syncTodo().catch(() => {});
       return { ok: await remindersActive() };
-    case 'password-check':
-      if (!sender.tab || fromExtensionPage) return undefined;
-      return passwordCheck(sender);
-    case 'password-action':
-      if (!sender.tab || fromExtensionPage) return undefined;
-      return passwordAction(msg as { action?: unknown }, sender);
     case 'aipaste-config':
       if (!sender.tab || fromExtensionPage) return undefined;
       return aiPasteConfig(sender);

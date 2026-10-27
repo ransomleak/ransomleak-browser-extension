@@ -1,3 +1,5 @@
+import { aiToolMatches, DEFAULT_AI_TOOLS } from './detect/ai-tools.ts';
+
 const PROD_CONNECTABLE = ['https://app.ransomleak.com/*', 'https://app.eu.ransomleak.com/*'];
 const DEV_CONNECTABLE = ['https://app.localhost:*/*'];
 
@@ -14,8 +16,11 @@ export const CONSENT_MATCHES = [
   'https://*.slack.com/oauth*',
 ];
 
-/** Optional host permissions for the password-entry warning. Must equal permissions.lock.json. */
-export const EXTRA_ORIGINS = ['https://*/*', 'http://*/*'];
+/**
+ * Optional host permissions: the AI tool sites the sensitive-paste check runs on (built-in tool list).
+ * A tool the server adds later is covered only once a release adds it here. Must equal permissions.lock.json.
+ */
+export const AI_ORIGINS = aiToolMatches(DEFAULT_AI_TOOLS);
 
 export function buildManifest(dev: boolean, stagingBase?: string) {
   const host_permissions: string[] = [];
@@ -27,12 +32,12 @@ export function buildManifest(dev: boolean, stagingBase?: string) {
     description: 'Warns you about look-alike, newly registered and reported phishing sites, and risky app permission screens.',
     icons: { '16': 'icons/icon-16.png', '32': 'icons/icon-32.png', '48': 'icons/icon-48.png', '128': 'icons/icon-128.png' },
     // activeTab: the popup's "Report this site" reads the current tab's host (granted per click, no install warning).
-    // scripting: registers the password-entry script only after the optional host permission is granted.
+    // scripting: registers the AI paste script only after the optional AI-site access is granted.
     permissions: ['webNavigation', 'storage', 'alarms', 'scripting', 'activeTab'],
-    // "Extra protection" (downloads) and "Turn on reminders" (notifications), each requested from the popup on
-    // a click; never at install.
+    // "Extra protection" (downloads, AI-site access) and "Turn on reminders" (notifications), each requested
+    // from the popup on a click; never at install.
     optional_permissions: ['downloads', 'notifications'],
-    optional_host_permissions: EXTRA_ORIGINS,
+    optional_host_permissions: AI_ORIGINS,
     background: { service_worker: 'src/background/index.ts', type: 'module' as const },
     action: {
       default_popup: 'src/popup/popup.html',

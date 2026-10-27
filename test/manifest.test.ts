@@ -16,6 +16,9 @@ describe('manifest', () => {
     expect(manifest.permissions).toEqual(lock.permissions);
     expect(manifest.optional_permissions).toEqual(['downloads', 'notifications']);
     expect(manifest.optional_host_permissions).toEqual(lock.optional_host_permissions);
+    // Optional site access is the AI tool list only: never all sites (that forces an in-depth store review).
+    expect(manifest.optional_host_permissions).toContain('https://chatgpt.com/*');
+    for (const o of manifest.optional_host_permissions) expect(o).toMatch(/^https:\/\/(\*\.)?[a-z0-9-]+(\.[a-z0-9-]+)+\/\*$/);
     expect(manifest.host_permissions ?? []).toEqual([]);
   });
 

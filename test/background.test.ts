@@ -97,10 +97,10 @@ describe('popup messages', () => {
   const SIG = { signals: [], device: { lastSeenAt: '2026-10-21T00:00:00Z', extVersion: '0.1.0' }, aiAttribution: false };
   it('popup-info reports state without opening the bind page', async () => {
     await boot();
-    expect(await sendMessage(chrome.runtime.onMessage, { type: 'popup-info' }, fromPopup)).toEqual({ connected: false, tenantName: null, needsReauth: false, disconnected: null, tenantOrigin: '', locale: 'en', extra: { passwordEntry: 'warn', downloads: 'warn', aiPaste: 'off' }, todo: null, reminders: { allowed: false }, links: { todo: '/app/campaigns', training: '/app/microlearning' } });
+    expect(await sendMessage(chrome.runtime.onMessage, { type: 'popup-info' }, fromPopup)).toEqual({ connected: false, tenantName: null, needsReauth: false, disconnected: null, tenantOrigin: '', locale: 'en', extra: { downloads: 'warn', aiPaste: 'off' }, todo: null, reminders: { allowed: false }, links: { todo: '/app/campaigns', training: '/app/microlearning' } });
     expect(chrome.tabs.create).not.toHaveBeenCalled();
     await boot({ local: bound });
-    expect(await sendMessage(chrome.runtime.onMessage, { type: 'popup-info' }, fromPopup)).toEqual({ connected: true, tenantName: 'Acme', needsReauth: false, disconnected: null, tenantOrigin: 'https://acme.ransomleak.com', locale: 'en', extra: { passwordEntry: 'warn', downloads: 'warn', aiPaste: 'off' }, todo: null, reminders: { allowed: false }, links: { todo: '/app/campaigns', training: '/app/microlearning' } });
+    expect(await sendMessage(chrome.runtime.onMessage, { type: 'popup-info' }, fromPopup)).toEqual({ connected: true, tenantName: 'Acme', needsReauth: false, disconnected: null, tenantOrigin: 'https://acme.ransomleak.com', locale: 'en', extra: { downloads: 'warn', aiPaste: 'off' }, todo: null, reminders: { allowed: false }, links: { todo: '/app/campaigns', training: '/app/microlearning' } });
   });
   it('bind-start opens the bind page on demand, even right after an earlier open', async () => {
     await boot();
@@ -1224,7 +1224,7 @@ describe('organization disconnect (revoked device / disabled user)', () => {
     await settle();
     expect(calls.length).toBe(n);
     expect(await sendMessage(chrome.runtime.onMessage, { type: 'popup-info' }, fromPopup)).toEqual({
-      connected: false, tenantName: null, needsReauth: false, disconnected: 'revoked', tenantOrigin: '', locale: 'en', extra: { passwordEntry: 'warn', downloads: 'warn', aiPaste: 'off' }, todo: null, reminders: { allowed: false }, links: { todo: '/app/campaigns', training: '/app/microlearning' },
+      connected: false, tenantName: null, needsReauth: false, disconnected: 'revoked', tenantOrigin: '', locale: 'en', extra: { downloads: 'warn', aiPaste: 'off' }, todo: null, reminders: { allowed: false }, links: { todo: '/app/campaigns', training: '/app/microlearning' },
     });
     // Signing in again clears the marker.
     routes['/api/browser-ext/policy'] = () => json(POLICY, 200, { etag: '"p1"' });

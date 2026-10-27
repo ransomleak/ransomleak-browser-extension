@@ -7,6 +7,7 @@ import { brandMark } from '../lib/brand.ts';
 import { getLocal, type WireEvent } from '../background/store.ts';
 import { appLinks, DEFAULT_APP_LINKS, isSafeAppPath, safeTenantOrigin, trainingUrl, UUID_RE, type AppLinks } from '../lib/origin.ts';
 import { dueMs, formatDueDate, normalizeTodo, REMINDER_PERMISSIONS, todoUrl, type TodoItem } from '../lib/todo.ts';
+import { AI_ORIGINS } from '../manifest.ts';
 
 type Days = 7 | 30 | 90 | 'all';
 const PERIODS: readonly { days: Days; key: 'pop_p7' | 'pop_p30' | 'pop_p90' | 'pop_pall' }[] = [
@@ -28,7 +29,7 @@ export interface PopupInfo {
   tenantOrigin: string;
   locale: string;
   /** Extra-protection detector modes (policy); absent from older workers. */
-  extra?: { passwordEntry?: string; downloads?: string; aiPaste?: string };
+  extra?: { downloads?: string; aiPaste?: string };
   /** Stored open assigned training (GET /me/todo); null before the first sync, absent from older workers. */
   todo?: { items?: unknown; total?: unknown } | null;
   /** The admin lets employees turn on training reminders; absent from older workers. */
@@ -68,7 +69,10 @@ export interface Deps {
 export const ACTIVITY_OPEN_KEY = 'popupActivityOpen';
 
 /** Optional permissions behind "Turn on extra protection" (manifest optional_*). */
-export const EXTRA_PERMISSIONS: chrome.permissions.Permissions = { origins: ['https://*/*', 'http://*/*'], permissions: ['downloads'] };
+/** "Extra protection": downloads always; AI-site access only when the AI paste check is on (no needless site prompt). */
+export function extraPermissions(aiPaste: boolean): chrome.permissions.Permissions {
+  return aiPaste ? { origins: AI_ORIGINS, permissions: ['downloads'] } : { permissions: ['downloads'] };
+}
 
 /** The host of a web page URL (lowercased, no path/query), or null for chrome://, extension pages, files. */
 export function reportableHost(url: string | undefined): string | null {
@@ -188,12 +192,11 @@ async function permissionCard(doc: Document, str: S, deps: Deps, c: PermissionCa
 /** "Turn on extra protection": when any detector is on and the optional permissions are not granted. */
 function renderExtra(doc: Document, info: PopupInfo, str: S, deps: Deps): Promise<HTMLElement | null> {
   const modes = info.extra ?? {};
-  const pw = modes.passwordEntry ?? 'warn';
   const dl = modes.downloads ?? 'warn';
   const ai = modes.aiPaste ?? 'off';
-  if (pw === 'off' && dl === 'off' && ai === 'off') return Promise.resolve(null);
+  if (dl === 'off' && ai === 'off') return Promise.resolve(null);
   return permissionCard(doc, str, deps, {
-    cls: 'extra', buttonCls: 'extra-on', permissions: EXTRA_PERMISSIONS, prefix: 'pop_extra', sync: { type: 'extra-protection-sync' },
+    cls: 'extra', buttonCls: 'extra-on', permissions: extraPermissions(ai !== 'off'), prefix: 'pop_extra', sync: { type: 'extra-protection-sync' },
   });
 }
 

@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { run, type Deps } from '../src/popup/popup.ts';
 import en from '../src/lib/i18n/en.json';
+import { AI_ORIGINS } from '../src/manifest.ts';
 
 const INFO = { connected: true, tenantName: 'Acme', needsReauth: false, tenantOrigin: 'https://acme.ransomleak.com', locale: 'en' };
 const noon = (d: string): string => new Date(`${d}T12:00:00`).toISOString();
@@ -309,12 +310,18 @@ describe('popup', () => {
   });
 
   describe('extra protection', () => {
-    it('offered when a permission is missing; the click requests both and syncs on grant', async () => {
+    it('offered when a permission is missing; the click requests downloads (AI sites only with AI paste on) and syncs on grant', async () => {
       granted = false;
       await mount();
       expect($('.extra')!.textContent).toContain(en.pop_extra_body);
       ($('.extra-on') as HTMLButtonElement).click();
-      expect(request).toHaveBeenCalledWith({ origins: ['https://*/*', 'http://*/*'], permissions: ['downloads'] });
+      expect(request).toHaveBeenCalledWith({ permissions: ['downloads'] });
+      await flush();
+      expect(send).toHaveBeenCalledWith({ type: 'extra-protection-sync' });
+      await mount({ ...INFO, extra: { downloads: 'warn', aiPaste: 'warn' } });
+      ($('.extra-on') as HTMLButtonElement).click();
+      expect(request).toHaveBeenLastCalledWith({ origins: AI_ORIGINS, permissions: ['downloads'] });
+      expect(AI_ORIGINS).not.toContain('https://*/*');
       await flush();
       expect(send).toHaveBeenCalledWith({ type: 'extra-protection-sync' });
       expect($('.extra')).toBeNull();
@@ -332,13 +339,13 @@ describe('popup', () => {
       await mount();
       expect($('.extra')).toBeNull();
       granted = false;
-      await mount({ ...INFO, extra: { passwordEntry: 'off', downloads: 'off' } });
+      await mount({ ...INFO, extra: { downloads: 'off' } });
       expect($('.extra')).toBeNull();
-      await mount({ ...INFO, extra: { passwordEntry: 'off', downloads: 'warn' } });
+      await mount({ ...INFO, extra: { downloads: 'warn' } });
       expect($('.extra')).not.toBeNull();
-      await mount({ ...INFO, extra: { passwordEntry: 'off', downloads: 'off', aiPaste: 'off' } });
+      await mount({ ...INFO, extra: { downloads: 'off', aiPaste: 'off' } });
       expect($('.extra')).toBeNull();
-      await mount({ ...INFO, extra: { passwordEntry: 'off', downloads: 'off', aiPaste: 'block' } });
+      await mount({ ...INFO, extra: { downloads: 'off', aiPaste: 'block' } });
       expect($('.extra')).not.toBeNull();
     });
   });

@@ -109,3 +109,19 @@ export function matchAiTool(host: string, idx: AiToolIndex): string | null {
   }
   return null;
 }
+
+/**
+ * Host match patterns for an AI tool list: each listed host, plus its subdomains when the entry is a
+ * registrable domain (same rule as matchAiTool). Sorted, unique. HTTPS only.
+ */
+export function aiToolMatches(tools: readonly AiTool[]): string[] {
+  const out = new Set<string>();
+  for (const t of tools) {
+    for (const d of t.domains) {
+      if (!/^[a-z0-9.-]+$/.test(d)) continue;
+      out.add(`https://${d}/*`);
+      if (parse(d).domain === d) out.add(`https://*.${d}/*`);
+    }
+  }
+  return [...out].sort();
+}

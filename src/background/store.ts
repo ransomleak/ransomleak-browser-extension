@@ -38,11 +38,9 @@ export interface Policy {
   version?: string;
   detectors?: {
     lookalike?: Mode; nrd?: Mode; oauth?: Mode; knownBad?: Mode; aiUsage?: 'on' | 'off';
-    /** Password typed on a flagged site (optional host permission). Missing = 'warn'. */
-    passwordEntry?: ExtraMode;
     /** Risky file downloaded from a flagged site (optional downloads permission). Missing = 'warn'. */
     downloads?: ExtraMode;
-    /** Sensitive paste into an AI tool (optional host permission). Missing = 'off'. */
+    /** Sensitive paste into an AI tool (optional AI-site access). Missing = 'off'. */
     aiPaste?: AiPasteMode;
   };
   protected?: { domains?: string[]; brands?: string[] };
@@ -71,14 +69,14 @@ export interface Policy {
   links?: { todo?: unknown; training?: unknown; home?: unknown };
 }
 
-// 'went_back' is emitted only by the password-entry, download and AI paste warnings.
+// 'went_back' is emitted only by the download and AI paste warnings (and the password-entry warning of earlier versions, still in history).
 export type Action = 'warned' | 'proceeded' | 'went_back' | 'blocked' | 'logged';
 export type Signal =
   | 'browser.lookalike_visit'
   | 'browser.risky_domain_visit'
   | 'browser.oauth_risky_consent_shown'
   | 'browser.warning_overridden'
-  | 'browser.password_entry_warned'
+  | 'browser.password_entry_warned' // removed in 1.1.0; kept so older history entries still type
   | 'browser.risky_download_warned'
   | 'browser.ai_sensitive_paste';
 

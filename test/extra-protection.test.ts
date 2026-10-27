@@ -1,8 +1,9 @@
-// Prerender activation, password-entry checks, risky downloads, site reports, extra-protection wiring.
+// Prerender activation, risky downloads, site reports, extra-protection wiring.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { IDBFactory } from 'fake-indexeddb';
 import { installChrome, makeDownloads, sendMessage, type ChromeStub } from './chrome-stub.ts';
 import { categoryOf } from '../src/background/downloads.ts';
+import { AI_ORIGINS } from '../src/manifest.ts';
 
 const API = 'https://app.ransomleak.com';
 const WARNING = 'chrome-extension://extid/src/warning/warning.html';
@@ -123,88 +124,21 @@ describe('prerendered pages', () => {
   });
 });
 
-describe('password-entry warning', () => {
-  const page = (url: string, tabId = 7) => ({ id: 'extid', url, tab: { id: tabId }, frameId: 0 });
-
-  it('flagged site: shows the overlay text once, emits warned, Continue silences tab+host', async () => {
-    await boot();
-    const r = await sendMessage(chrome.runtime.onMessage, { type: 'password-check' }, page('https://acrne.com/login?x=1')) as any;
-    expect(r.show).toBe(true);
-    expect(r.text.title).toBe("You're about to type a password on a site we flagged");
-    expect(queue().map((e) => [e.signal, e.domain, e.action])).toEqual([['browser.password_entry_warned', 'acrne.com', 'warned']]);
-    expect(JSON.stringify(queue())).not.toContain('login');
-    expect(await sendMessage(chrome.runtime.onMessage, { type: 'password-action', action: 'continue' }, page('https://acrne.com/other'))).toEqual({ ok: true });
-    expect(queue().at(-1)).toMatchObject({ signal: 'browser.password_entry_warned', action: 'proceeded' });
-    expect(await sendMessage(chrome.runtime.onMessage, { type: 'password-check' }, page('https://acrne.com/login'))).toEqual({ show: false });
-    // Another tab is asked again, without a second warned event for the first tab.
-    expect((await sendMessage(chrome.runtime.onMessage, { type: 'password-check' }, page('https://acrne.com/', 8)) as any).show).toBe(true);
-  });
-
-  it('Go back: went_back, navigates to the last safe page or asks the page to go back', async () => {
-    await boot();
-    await sendMessage(chrome.runtime.onMessage, { type: 'password-check' }, page('https://acrne.com/'));
-    expect(await sendMessage(chrome.runtime.onMessage, { type: 'password-action', action: 'back' }, page('https://acrne.com/'))).toEqual({ ok: true, history: true });
-    expect(queue().at(-1)).toMatchObject({ action: 'went_back' });
-    chrome.storage.session.dump['lastSafe:7'] = 'https://news.example/';
-    expect(await sendMessage(chrome.runtime.onMessage, { type: 'password-action', action: 'back' }, page('https://acrne.com/'))).toEqual({ ok: true });
-    expect(chrome.tabs.update).toHaveBeenCalledWith(7, { url: 'https://news.example/' });
-  });
-
-  it('safe site, off mode, unbound, subframe: no overlay, no event', async () => {
-    await boot();
-    expect(await sendMessage(chrome.runtime.onMessage, { type: 'password-check' }, page('https://example.org/'))).toEqual({ show: false });
-    expect(await sendMessage(chrome.runtime.onMessage, { type: 'password-check' }, { ...page('https://acrne.com/'), frameId: 2 })).toEqual({ show: false });
-    expect(await sendMessage(chrome.runtime.onMessage, { type: 'password-action', action: 'continue' }, page('https://example.org/'))).toEqual({ ok: false });
-    await boot({ ...bound, policy: { ...POLICY, detectors: { ...POLICY.detectors, passwordEntry: 'off' } } });
-    expect(await sendMessage(chrome.runtime.onMessage, { type: 'password-check' }, page('https://acrne.com/'))).toEqual({ show: false });
-    await boot({});
-    expect(await sendMessage(chrome.runtime.onMessage, { type: 'password-check' }, page('https://acrne.com/'))).toEqual({ show: false });
-    expect(queue()).toHaveLength(0);
-  });
-
-  it('log mode: event only, once per tab+host', async () => {
-    await boot({ ...bound, policy: { ...POLICY, detectors: { ...POLICY.detectors, passwordEntry: 'log' } } });
-    for (let i = 0; i < 2; i++) expect(await sendMessage(chrome.runtime.onMessage, { type: 'password-check' }, page('https://acrne.com/'))).toEqual({ show: false });
-    expect(queue().map((e) => e.action)).toEqual(['logged']);
-  });
-
-  it('extension pages cannot send password messages', async () => {
-    await boot();
-    expect(await sendMessage(chrome.runtime.onMessage, { type: 'password-check' }, { id: 'extid', url: 'chrome-extension://extid/src/popup/popup.html', frameId: 0 })).toBeUndefined();
-  });
-});
-
 describe('extra-protection wiring', () => {
-  it('registers the password script only while the host permission is granted', async () => {
-    await boot();
-    expect(chrome.scripting._registered.size).toBe(0);
-    chrome.permissions._granted.origins = ['https://*/*', 'http://*/*'];
-    chrome.permissions.onAdded.dispatch({ origins: chrome.permissions._granted.origins });
-    await settle();
-    expect(chrome.scripting.registerContentScripts).toHaveBeenCalledWith([expect.objectContaining({
-      id: 'rl-password', js: ['content-password.js'], matches: ['https://*/*', 'http://*/*'], runAt: 'document_idle', allFrames: false,
-    })]);
-    chrome.permissions._granted.origins = [];
-    chrome.permissions.onRemoved.dispatch({ origins: ['https://*/*'] });
-    await settle();
-    expect(chrome.scripting._registered.size).toBe(0);
-  });
-
-  it('re-registers on worker start when already granted (idempotent)', async () => {
-    await boot(bound, (c) => { c.permissions._granted.origins = ['https://*/*', 'http://*/*']; });
-    expect(chrome.scripting._registered.has('rl-password')).toBe(true);
-    expect(chrome.scripting.registerContentScripts).toHaveBeenCalledTimes(1);
+  it('removes the password-entry script an older version registered', async () => {
+    await boot(bound, (c) => { c.scripting._registered.set('rl-password', { id: 'rl-password' }); });
+    expect(chrome.scripting._registered.has('rl-password')).toBe(false);
   });
 
   it('popup-info carries the extra modes', async () => {
-    await boot({ ...bound, policy: { ...POLICY, detectors: { ...POLICY.detectors, passwordEntry: 'off', downloads: 'log' } } });
+    await boot({ ...bound, policy: { ...POLICY, detectors: { ...POLICY.detectors, downloads: 'log' } } });
     expect(await sendMessage(chrome.runtime.onMessage, { type: 'popup-info' }, { id: 'extid', url: 'chrome-extension://extid/src/popup/popup.html' }))
-      .toMatchObject({ extra: { passwordEntry: 'off', downloads: 'log' } });
+      .toMatchObject({ extra: { downloads: 'log', aiPaste: 'off' } });
   });
 });
 
 describe('sensitive paste into AI tools', () => {
-  const GRANTED = (c: ChromeStub) => { c.permissions._granted.origins = ['https://*/*', 'http://*/*']; };
+  const GRANTED = (c: ChromeStub) => { c.permissions._granted.origins = [...AI_ORIGINS]; };
   const withMode = (mode?: string) => ({ ...bound, policy: { ...POLICY, detectors: { ...POLICY.detectors, ...(mode ? { aiPaste: mode } : {}) } } });
   const tab = (url: string, frameId = 0) => ({ id: 'extid', url, tab: { id: 7 }, frameId });
 
@@ -231,7 +165,7 @@ describe('sensitive paste into AI tools', () => {
     expect(reg.matches).not.toContain('https://*/*');
     expect(reg.matches.every((m: string) => m.startsWith('https://'))).toBe(true);
     chrome.permissions._granted.origins = [];
-    chrome.permissions.onRemoved.dispatch({ origins: ['https://*/*'] });
+    chrome.permissions.onRemoved.dispatch({ origins: ['https://chatgpt.com/*'] });
     await settle();
     expect(chrome.scripting._registered.has('rl-aipaste')).toBe(false);
   });
@@ -241,6 +175,11 @@ describe('sensitive paste into AI tools', () => {
     routes['/api/browser-ext/policy'] = () => json(policy, 200);
     await boot(withMode('off'), GRANTED);
     expect(chrome.scripting._registered.has('rl-aipaste')).toBe(false);
+    chrome.alarms.onAlarm.dispatch({ name: 'policy' });
+    await settle();
+    expect((chrome.scripting._registered.get('rl-aipaste') as any).matches).toEqual(['https://*.chatgpt.com/*', 'https://chatgpt.com/*']);
+    // A tool the manifest cannot grant (not in the built-in list) is left out until a release adds it.
+    policy = { ...policy, version: '1b', aiTools: [...policy.aiTools, { id: 'new', name: 'New AI', domains: ['new-ai-tool.example'] }] };
     chrome.alarms.onAlarm.dispatch({ name: 'policy' });
     await settle();
     expect((chrome.scripting._registered.get('rl-aipaste') as any).matches).toEqual(['https://*.chatgpt.com/*', 'https://chatgpt.com/*']);
