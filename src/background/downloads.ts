@@ -2,7 +2,7 @@
 // shared classifier flags is paused before its name is settled; warn mode opens the warning page's
 // download variant (Go back = cancel and erase, Keep download = resume); log mode records only.
 import { enqueue, flush } from './events.ts';
-import { recordLesson } from './lesson.ts';
+import { lessonPayload, recordLesson } from './lesson.ts';
 import { classify, WARNING_PATH } from './navigation.ts';
 import { extraModeOf, getAuthAndPolicy, getSession, setSession } from './store.ts';
 
@@ -110,8 +110,8 @@ export async function handleDownloadWarning(msg: { type: string; action?: unknow
   if (msg.type === 'warning-info') {
     const { auth } = await getAuthAndPolicy();
     return {
-      domain: p.domain, filename: p.filename, kind: 'download', mode: 'warn', highlight: [0, 0], learn: false, locale: auth?.locale ?? 'en',
-      lesson: { kind: 'download', genuine: null, deny: [], course: false },
+      domain: p.domain, filename: p.filename, kind: 'download', mode: 'warn', highlight: [0, 0], locale: auth?.locale ?? 'en',
+      lesson: lessonPayload('download'),
     };
   }
   // Domain comes from the stored pending download, never from the message.

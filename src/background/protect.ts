@@ -120,6 +120,7 @@ export async function aiPasteEvent(msg: { category?: unknown; action?: unknown }
 }
 
 export type SiteReportResult = { status: 'sent' | 'already' | 'rate_limited' | 'invalid' | 'failed' | 'unauthenticated' };
+// Unlike isHostname (lib/domain.ts), a single label is allowed here and the input is trimmed/lowercased first.
 const HOST = /^(?=.{1,253}$)(?!-)[a-z0-9-]{1,63}(?:\.(?!-)[a-z0-9-]{1,63})*$/;
 
 /** Popup "Report this site": host only (never path or query), optional plain-text note ≤ 500. */

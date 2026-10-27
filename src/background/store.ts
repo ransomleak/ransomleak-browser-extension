@@ -1,5 +1,6 @@
 // Typed chrome.storage helpers and shared types. All state lives in storage: the worker dies after ~30 s.
 
+import { LOCALES, type Locale } from '../lib/locales.ts';
 import type { Mode } from '../lib/mode.ts';
 
 export { modeOf, type Mode } from '../lib/mode.ts';
@@ -8,8 +9,7 @@ export const THROTTLE_MS = 24 * 3_600_000;
 /** Detector mode -> event action. */
 export const actionFor = (m: Mode): Action => (m === 'block' ? 'blocked' : m === 'warn' ? 'warned' : 'logged');
 
-export type Locale = 'en' | 'de' | 'fr' | 'it' | 'nl' | 'uk';
-export const LOCALES: readonly Locale[] = ['en', 'de', 'fr', 'it', 'nl', 'uk'];
+export { LOCALES, type Locale };
 
 export interface Auth {
   token: string;

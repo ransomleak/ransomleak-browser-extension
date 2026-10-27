@@ -12,15 +12,15 @@ import { apiBaseFor } from './config.ts';
 import { enqueue, enqueueAll, flush } from './events.ts';
 import { lessonKindFor } from '../lesson/content.ts';
 import { genuineDomain } from '../lesson/quiz.ts';
-import { recordLesson } from './lesson.ts';
-import { WARNING_PATH } from './paths.ts';
+import { lessonPayload, recordLesson } from './lesson.ts';
 import { loadFeed } from './policy.ts';
 import {
   actionFor, chromeLocalStore, claimOnce, pruneOnce, getAuth, getAuthAndPolicy, getLocal, getPolicy, getSession, locked, modeOf, setLocal, setSession,
   THROTTLE_MS, type Mode, type Policy, type Signal,
 } from './store.ts';
 
-export { WARNING_PATH };
+/** The extension page that hosts both the warning and the lessons. */
+export const WARNING_PATH = 'src/warning/warning.html';
 
 /** `watch` = the tenant's brand-watch look-alikes (policy.knownBad). */
 type Kind = 'tenant' | 'brand' | 'risky' | 'known' | 'watch';
@@ -330,8 +330,8 @@ export async function handleWarning(msg: { type: string; action?: unknown }, sen
     const genuine = lookalike ? genuineDomain(p.matched!, owners, policy.protected?.domains) : null;
     const deny = lookalike ? [...(owners[p.matched!.toLowerCase()] ?? [])] : [];
     return {
-      domain: p.domain, kind: p.kind, mode: p.mode, highlight: p.highlight, learn: !!learn, locale: auth?.locale ?? 'en',
-      lesson: { kind: lessonKind, genuine, deny, course: !!learn },
+      domain: p.domain, kind: p.kind, mode: p.mode, highlight: p.highlight, locale: auth?.locale ?? 'en',
+      lesson: lessonPayload(p.kind, { genuine, deny, course: !!learn }),
     };
   }
   switch (msg.action) {

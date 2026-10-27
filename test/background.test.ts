@@ -335,7 +335,7 @@ describe('navigation', () => {
     await boot({ local: bound });
     await nav('https://acrne.com/a');
     const info = (await sendMessage(chrome.runtime.onMessage, { type: 'warning-info' }, fromWarning)) as any;
-    expect(info).toMatchObject({ domain: 'acrne.com', kind: 'tenant', mode: 'warn', highlight: [0, 5], learn: true, locale: 'en' });
+    expect(info).toMatchObject({ domain: 'acrne.com', kind: 'tenant', mode: 'warn', highlight: [0, 5], locale: 'en', lesson: expect.objectContaining({ course: true }) });
     await sendMessage(chrome.runtime.onMessage, { type: 'warning-action', action: 'continue' }, fromWarning);
     expect(queue().at(-1)).toMatchObject({ signal: 'browser.warning_overridden', domain: 'acrne.com', action: 'proceeded' });
     expect(chrome.storage.session.dump['allow']).toEqual({ 'acrne.com': 'warn' });
@@ -372,8 +372,8 @@ describe('navigation', () => {
   it('hides Learn when the stored tenant origin is not https', async () => {
     await boot({ local: { ...bound, auth: { ...AUTH, tenantOrigin: 'http://acme.ransomleak.com' } } });
     await nav('https://acrne.com/');
-    const info = (await sendMessage(chrome.runtime.onMessage, { type: 'warning-info' }, fromWarning)) as { learn: boolean };
-    expect(info.learn).toBe(false);
+    const info = (await sendMessage(chrome.runtime.onMessage, { type: 'warning-info' }, fromWarning)) as { lesson: { course: boolean } };
+    expect(info.lesson.course).toBe(false);
   });
   it('warning messages from other senders are ignored', async () => {
     await boot({ local: bound });

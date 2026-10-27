@@ -2,7 +2,8 @@
 import { brandMark } from '../lib/brand.ts';
 import { el } from '../lib/dom.ts';
 import { stringsFor, type Strings } from '../lib/i18n.ts';
-import { lessonKindFor, type LessonKind } from '../lesson/content.ts';
+import type { LessonKind } from '../lesson/content.ts';
+import { isSupportedLocale } from '../lib/locales.ts';
 import { renderLesson, standaloneFromUrl } from './lesson.ts';
 
 export interface WarningInfo {
@@ -12,15 +13,14 @@ export interface WarningInfo {
   /** Download variant only: the file's base name (shown as text). */
   filename?: string;
   highlight: [number, number];
-  learn: boolean;
   locale: string;
-  lesson?: { kind: LessonKind; genuine: string | null; deny: string[]; course: boolean };
+  lesson: { kind: LessonKind; genuine: string | null; deny: string[]; course: boolean };
 }
 export type WarningAction = 'back' | 'continue' | 'request' | 'learn' | 'keep' | 'lesson-done';
 
 /** Opens the lesson in place of the warning content; "Back to warning" re-renders the warning. */
 function openLesson(doc: Document, info: WarningInfo, s: Strings, act: (a: WarningAction) => void | Promise<unknown>): void {
-  const l = info.lesson ?? { kind: lessonKindFor(info.kind), genuine: null, deny: [], course: false };
+  const l = info.lesson;
   renderLesson(
     doc,
     { kind: l.kind, domain: info.domain, highlight: info.highlight, genuine: l.genuine, deny: l.deny, course: l.course, standalone: false },
@@ -98,7 +98,7 @@ export function renderStandalone(doc: Document, search: string, locale: string, 
   const st = standaloneFromUrl(search);
   if (!st) return false;
   const s = stringsFor(locale);
-  doc.documentElement.lang = locale in { en: 1, de: 1, fr: 1, it: 1, nl: 1, uk: 1 } ? locale : 'en';
+  doc.documentElement.lang = isSupportedLocale(locale) ? locale : 'en';
   doc.title = s.page_title;
   renderLesson(
     doc,
@@ -110,12 +110,10 @@ export function renderStandalone(doc: Document, search: string, locale: string, 
   return true;
 }
 
-const LOCALE_CODES = ['en', 'de', 'fr', 'it', 'nl', 'uk'];
-
 async function main(): Promise<void> {
   const send = (m: unknown): Promise<unknown> => chrome.runtime.sendMessage(m);
   const l = new URLSearchParams(location.search).get('l');
-  const locale = l && LOCALE_CODES.includes(l) ? l : (navigator.language || 'en').slice(0, 2).toLowerCase();
+  const locale = isSupportedLocale(l) ? l : (navigator.language || 'en').slice(0, 2).toLowerCase();
   if (renderStandalone(doc(), location.search, locale, send, () => window.close())) return;
   const info = (await send({ type: 'warning-info' })) as WarningInfo | { error: string } | undefined;
   if (!info || 'error' in info) {

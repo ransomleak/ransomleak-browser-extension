@@ -100,10 +100,15 @@ export function lookalikeQuiz(
   );
 }
 
+/** Looks up a lesson string by dynamic key; missing keys give ''. */
+export function lessonText(s: Strings): (key: string) => string {
+  const g = s as unknown as Record<string, string>;
+  return (k) => g[k] ?? '';
+}
+
 /** Fixed three-option quiz from the locale strings. */
 export function fixedQuiz(s: Strings, kind: LessonKind, rand: () => number = Math.random): QuizOption[] {
-  const g = s as unknown as Record<string, string>;
-  const t = (k: string): string => g[k] ?? '';
+  const t = lessonText(s);
   return shuffle(
     [
       { text: t(`lesson_${kind}_a`), correct: true },

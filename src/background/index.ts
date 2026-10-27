@@ -11,7 +11,7 @@ import {
   aiPasteConfig, aiPasteEvent, extraModes, removeLegacyPasswordScript, siteReport, syncAiPasteScript,
 } from './protect.ts';
 import { forgetTab, handleWarning, WARNING_PATH, onBeforeNavigate, onCommitted, onTabUpdated, pruneThrottle } from './navigation.ts';
-import { lessonDone, openLesson } from './lesson.ts';
+import { lessonDone, openLesson } from './standalone-lesson.ts';
 import { FEEDS, feedInfo, feedStale, refreshFeed, refreshFeeds, syncPolicy } from './policy.ts';
 import { dismissRecommendation, meSignals } from './signals.ts';
 import { remindersActive, restoreBadge, storedTodo, syncTodo, wireNotifications } from './todo.ts';

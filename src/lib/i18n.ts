@@ -8,5 +8,6 @@ import nl from './i18n/nl.json';
 import uk from './i18n/uk.json';
 
 export type Strings = typeof en;
+export { isSupportedLocale, LOCALES, type Locale } from './locales.ts';
 const ALL: Record<string, Strings> = { en, de, fr, it, nl, uk };
 export const stringsFor = (locale: string): Strings => ALL[locale] ?? en;

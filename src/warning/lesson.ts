@@ -3,8 +3,9 @@
 import { brandMark } from '../lib/brand.ts';
 import { el } from '../lib/dom.ts';
 import type { Strings } from '../lib/i18n.ts';
-import type { LessonKind } from '../lesson/content.ts';
-import { fixedQuiz, lookalikeQuiz, type QuizOption } from '../lesson/quiz.ts';
+import { isHostname } from '../lib/domain.ts';
+import { isStandaloneKind, type LessonKind, type StandaloneKind } from '../lesson/content.ts';
+import { fixedQuiz, lessonText, lookalikeQuiz, type QuizOption } from '../lesson/quiz.ts';
 
 export interface LessonCase {
   kind: LessonKind;
@@ -18,13 +19,6 @@ export interface LessonCase {
 }
 
 const TOTAL = 4;
-
-/** Same rule as the background: lowercase hostname, 1-253 chars, at least one dot, labels [a-z0-9-]. */
-export function isHostname(d: unknown): d is string {
-  if (typeof d !== 'string' || d.length < 1 || d.length > 253 || d !== d.toLowerCase()) return false;
-  const labels = d.split('.');
-  return labels.length >= 2 && labels.every((l) => l.length >= 1 && l.length <= 63 && /^[a-z0-9-]+$/.test(l));
-}
 
 /** Domain text with an optional `<mark>` over [a, b). */
 export function markedDomain(doc: Document, d: string, hl: [number, number] | undefined, cls = 'name'): HTMLParagraphElement {
@@ -44,13 +38,10 @@ export function renderLesson(
   record: () => void,
   backToWarning?: () => void,
 ): void {
-  const g = s as unknown as Record<string, string>;
-  const t = (k: string): string => g[k] ?? '';
+  const t = lessonText(s);
   const lookalike = c.kind === 'lookalike' && !c.standalone;
-  let quiz: QuizOption[] | null = null;
-  if (lookalike && c.genuine && c.domain) quiz = lookalikeQuiz(c.genuine, c.domain, Math.random, c.deny ?? []);
-  const generated = quiz !== null;
-  if (!quiz) quiz = fixedQuiz(s, c.kind);
+  const generated = lookalike && c.genuine && c.domain ? lookalikeQuiz(c.genuine, c.domain, Math.random, c.deny ?? []) : null;
+  const quiz: QuizOption[] = generated ?? fixedQuiz(s, c.kind);
   const question = generated ? t('lesson_genuine_q').replace('{brand}', c.genuine ?? '') : t(`lesson_${c.kind}_q`);
   let recorded = false;
 
@@ -131,7 +122,7 @@ export function renderLesson(
     const opts = el(doc, 'div', undefined, 'options');
     const why = el(doc, 'p', undefined, 'status why');
     why.setAttribute('role', 'status');
-    for (const o of quiz!) {
+    for (const o of quiz) {
       const b = btn(o.text, 'option', () => {
         if (o.correct) { step4(); return; }
         for (const x of opts.querySelectorAll('button')) x.setAttribute('aria-pressed', 'false');
@@ -160,10 +151,10 @@ export function renderLesson(
 }
 
 /** Parses `?lesson=<kind>&d=<host>` for the standalone page. Kind must be consent|aipaste; `d` null when invalid. */
-export function standaloneFromUrl(search: string): { kind: 'consent' | 'aipaste'; domain: string | null } | null {
+export function standaloneFromUrl(search: string): { kind: StandaloneKind; domain: string | null } | null {
   const q = new URLSearchParams(search);
   const kind = q.get('lesson');
-  if (kind !== 'consent' && kind !== 'aipaste') return null;
+  if (!isStandaloneKind(kind)) return null;
   const d = q.get('d');
   return { kind, domain: isHostname(d) ? d : null };
 }

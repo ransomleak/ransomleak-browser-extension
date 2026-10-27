@@ -22,25 +22,16 @@ function looksLikeConsent(provider: Provider, url: URL, stored: OAuthRequest | n
   return scoped && CONSENT_PATHS[provider].test(url.pathname);
 }
 
-function send(message: unknown): void {
+function send(message: unknown): Promise<unknown> | undefined {
   try {
     // Orphaned scripts (extension updated/reloaded) lose chrome.runtime: ignore silently.
-    if (!chrome.runtime?.id) return;
+    if (!chrome.runtime?.id) return undefined;
     const p = chrome.runtime.sendMessage(message) as Promise<unknown> | undefined;
     p?.catch?.(() => {});
+    return p;
   } catch {
     /* context invalidated */
-  }
-}
-
-function openLesson(): void {
-  const warn = (): void => console.warn('RansomLeak: could not open the lesson');
-  try {
-    if (!chrome.runtime?.id) return;
-    const p = chrome.runtime.sendMessage({ type: 'open-lesson', kind: 'consent' }) as Promise<unknown> | undefined;
-    p?.catch?.(warn);
-  } catch {
-    warn();
+    return undefined;
   }
 }
 
@@ -66,7 +57,7 @@ async function handle(info: ConsentInfo): Promise<void> {
   if (risky && (mode === 'warn' || mode === 'block')) {
     const locale = pickLocale(await readLocale(), navigator.language);
     showOverlay(document, info, mode, { locale, onRequest: send, onContinue: () => send({ type: 'consent-action', action: 'continue', info }),
-      onLearn: openLesson });
+      onLearn: () => { void send({ type: 'open-lesson', kind: 'consent' })?.catch(() => console.warn('RansomLeak: could not open the lesson')); } });
   }
 }
 

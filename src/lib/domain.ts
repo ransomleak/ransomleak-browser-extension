@@ -2,6 +2,13 @@ import { parse } from 'tldts';
 import { toUnicode } from 'punycode/';
 import { CONFUSABLES } from './confusables.ts';
 
+/** Lowercase hostname: 1-253 chars, at least one dot, labels of [a-z0-9-] (punycode allowed). */
+export function isHostname(d: unknown): d is string {
+  if (typeof d !== 'string' || d.length < 1 || d.length > 253 || d !== d.toLowerCase()) return false;
+  const labels = d.split('.');
+  return labels.length >= 2 && labels.every((l) => l.length >= 1 && l.length <= 63 && /^[a-z0-9-]+$/.test(l));
+}
+
 /** host is d or a subdomain of d. */
 export const under = (host: string, d: string): boolean => host === d || host.endsWith('.' + d);
 

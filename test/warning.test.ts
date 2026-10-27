@@ -7,7 +7,8 @@ import en from '../src/lib/i18n/en.json';
 
 const LOCALES = ['en', 'de', 'fr', 'it', 'nl', 'uk'];
 
-const base = { domain: 'acrne.com', kind: 'tenant' as const, mode: 'warn' as const, highlight: [0, 5] as [number, number], learn: true, locale: 'en' };
+const base = { domain: 'acrne.com', kind: 'tenant' as const, mode: 'warn' as const, highlight: [0, 5] as [number, number], locale: 'en',
+  lesson: { kind: 'lookalike' as const, genuine: null, deny: [] as string[], course: false } };
 
 describe('warning page', () => {
   it('renders the domain with the lookalike part highlighted as text, and warn buttons', () => {
@@ -23,7 +24,7 @@ describe('warning page', () => {
   });
   it('block mode replaces Continue with Request access; Learn why is always present', () => {
     const act = vi.fn();
-    render(document, { ...base, mode: 'block', learn: false }, stringsFor('en'), act);
+    render(document, { ...base, mode: 'block' }, stringsFor('en'), act);
     const actions = [...document.querySelectorAll('button')].map((b) => b.dataset['action']);
     expect(actions).toEqual(['back', 'request', 'learn']);
     (document.querySelector('[data-action=request]') as HTMLButtonElement).click();
@@ -62,7 +63,7 @@ const options = (): HTMLButtonElement[] => [...document.querySelectorAll<HTMLBut
 
 describe('lesson inside the warning page', () => {
   const info: WarningInfo = {
-    ...base, domain: 'paypa1-login.com', highlight: [0, 6], learn: false,
+    ...base, domain: 'paypa1-login.com', highlight: [0, 6],
     lesson: { kind: 'lookalike', genuine: 'paypal.com', deny: ['paypal.com'], course: true },
   };
 
@@ -152,7 +153,7 @@ describe('standalone lesson', () => {
     expect(send).not.toHaveBeenCalled();
   });
   it('back-to-warning arrow is aria-hidden and the label stays in the button', () => {
-    render(document, { ...base, learn: true, lesson: { kind: 'lookalike', genuine: 'paypal.com', deny: [], course: false } }, stringsFor('en'), vi.fn());
+    render(document, { ...base, lesson: { kind: 'lookalike', genuine: 'paypal.com', deny: [], course: false } }, stringsFor('en'), vi.fn());
     click('[data-action=learn]');
     const arrow = document.querySelector('.back-warning > span')!;
     expect(arrow.getAttribute('aria-hidden')).toBe('true');
