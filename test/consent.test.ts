@@ -338,6 +338,24 @@ describe('localized Google consent (scope-less v3 consent URL)', () => {
     expect(u.root!.textContent).toContain('Ваша організація блокує цей застосунок');
     u.remove();
   });
+  it('Learn why calls onLearn and leaves the overlay and its choices alone, in both modes', () => {
+    const info = parseConsent(load('google-uk'), 'google', V3, stored)!;
+    for (const mode of ['warn', 'block'] as const) {
+      const onLearn = vi.fn();
+      const onContinue = vi.fn();
+      const onRequest = vi.fn();
+      const h = showOverlay(document, info, mode, { onRequest, onContinue, onLearn, exposeRootForTest: true });
+      const learn = h.root!.querySelector('[data-action=learn]') as HTMLButtonElement;
+      expect(learn.textContent).toBe('Learn why (60 s)');
+      learn.click();
+      expect(onLearn).toHaveBeenCalledTimes(1);
+      expect(onContinue).not.toHaveBeenCalled();
+      expect(onRequest).not.toHaveBeenCalled();
+      expect(document.querySelector('[data-rl-consent]')).toBeTruthy();
+      expect(h.root!.querySelector('[data-action=back]')).toBeTruthy();
+      h.remove();
+    }
+  });
   it('pickLocale: tenant locale first, then browser language, then English', () => {
     expect(pickLocale('fr', 'de-DE')).toBe('fr');
     expect(pickLocale(undefined, 'nl-BE')).toBe('nl');

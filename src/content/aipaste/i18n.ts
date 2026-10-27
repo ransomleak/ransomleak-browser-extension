@@ -14,6 +14,7 @@ const en = {
   cancel: 'Don\'t paste',
   paste: 'Paste anyway',
   ok: 'OK',
+  learn: 'Learn why (60 s)',
 };
 export type MsgKey = keyof typeof en;
 type Table = Record<MsgKey, string>;
@@ -30,6 +31,7 @@ const de: Table = {
   cancel: 'Nicht einfügen',
   paste: 'Trotzdem einfügen',
   ok: 'OK',
+  learn: 'Mehr erfahren (60 s)',
 };
 const fr: Table = {
   titleWarn: 'Vérifiez avant de coller',
@@ -43,6 +45,7 @@ const fr: Table = {
   cancel: 'Ne pas coller',
   paste: 'Coller quand même',
   ok: 'OK',
+  learn: 'Pourquoi ? (60 s)',
 };
 const it: Table = {
   titleWarn: 'Controlla prima di incollare',
@@ -56,6 +59,7 @@ const it: Table = {
   cancel: 'Non incollare',
   paste: 'Incolla comunque',
   ok: 'OK',
+  learn: 'Scopri perché (60 s)',
 };
 const nl: Table = {
   titleWarn: 'Controleer dit voordat je het plakt',
@@ -69,6 +73,7 @@ const nl: Table = {
   cancel: 'Niet plakken',
   paste: 'Toch plakken',
   ok: 'OK',
+  learn: 'Waarom? (60 s)',
 };
 const uk: Table = {
   titleWarn: 'Перевірте це, перш ніж вставити',
@@ -82,6 +87,7 @@ const uk: Table = {
   cancel: 'Не вставляти',
   paste: 'Усе одно вставити',
   ok: 'OK',
+  learn: 'Чому це небезпечно (60 с)',
 };
 
 const ALL: Record<string, Table> = { en, de, fr, it, nl, uk };
@@ -95,7 +101,7 @@ export function pickLocale(tenant?: string | null, browser?: string | null): str
   return 'en';
 }
 
-export interface PasteText { title: string; body: string; cancel: string; paste: string; ok: string }
+export interface PasteText { title: string; body: string; cancel: string; paste: string; ok: string; learn: string }
 
 export function pasteText(category: PasteCategory, block: boolean, locale = 'en'): PasteText {
   const tb = ALL[locale] ?? en;
@@ -105,5 +111,6 @@ export function pasteText(category: PasteCategory, block: boolean, locale = 'en'
     cancel: tb.cancel,
     paste: tb.paste,
     ok: tb.ok,
+    learn: tb.learn,
   };
 }

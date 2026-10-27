@@ -94,6 +94,22 @@ describe('AI paste content script', () => {
     expect(ta.value).toBe('ab');
   });
 
+  it('Learn why opens the lesson and leaves the overlay and its choices alone', async () => {
+    const shadow = captureShadow();
+    const { send, ta } = await setup('warn');
+    paste(ta, SECRET);
+    const root = shadow()!;
+    const learn = root.querySelector('[data-action=learn]') as HTMLButtonElement;
+    expect(learn.textContent).toBe('Learn why (60 s)');
+    learn.click();
+    await flush();
+    expect(send).toHaveBeenLastCalledWith({ type: 'open-lesson', kind: 'aipaste' });
+    expect(root.querySelector('[data-action=paste]')).toBeTruthy();
+    expect(root.querySelector('[data-action=cancel]')).toBeTruthy();
+    expect(ta.value).toBe('ab');
+    expect(send.mock.calls.some((c) => (c[0] as { type: string }).type === 'aipaste-event')).toBe(false);
+  });
+
   it('puts the overlay back when a page script removes it', async () => {
     await setup('warn');
     paste(document.getElementById('t')!, SECRET);

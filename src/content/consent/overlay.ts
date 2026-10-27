@@ -7,6 +7,8 @@ export type OverlayOpts = {
   onRequest: (msg: { type: 'block-request'; kind: 'oauth_app'; target: string; label: string }) => void;
   /** The user chose Continue anyway (warn mode): recorded as a proceeded consent. */
   onContinue?: () => void;
+  /** The user opened the optional lesson; the overlay and its choices stay as they are. */
+  onLearn?: () => void;
   navigate?: (url: string) => void;
   /** Supported locale code (see pickLocale); defaults to English. */
   locale?: string;
@@ -53,6 +55,8 @@ button{font:inherit;font-size:14px;font-weight:600;border-radius:9px;padding:10p
 button:hover:not(:disabled){border-color:var(--fg-3);background:var(--sev-soft)}
 button.primary{background:var(--sage);border-color:var(--sage);color:var(--on-sage)}
 button.primary:hover:not(:disabled){background:var(--sage-hi);border-color:var(--sage-hi)}
+button.learn{display:block;align-self:flex-start;margin-top:-6px;padding:2px 0;border:0;border-radius:4px;background:none;color:var(--sage);font-size:14px;font-weight:500;text-decoration:underline;text-underline-offset:3px}
+button.learn:hover:not(:disabled){background:none;color:var(--sage-hi)}
 button:disabled{opacity:.55;cursor:default}
 button:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
 .status{margin:0;font-size:13px;color:var(--fg-2)}
@@ -215,7 +219,16 @@ export function showOverlay(doc: Document, info: ConsentInfo, mode: 'warn' | 'bl
   } else {
     second.addEventListener('click', () => { clearTimeout(fallback); opts.onContinue?.(); remove(); });
   }
-  panel.append(brand, lede, app, actions, status);
+  panel.append(brand, lede, app, actions);
+  const onLearn = opts.onLearn;
+  if (onLearn) {
+    const learn = el(doc, 'button', t('learn'), 'learn');
+    learn.type = 'button';
+    learn.setAttribute('data-action', 'learn');
+    learn.addEventListener('click', () => onLearn());
+    panel.append(learn);
+  }
+  panel.append(status);
   wrap.append(panel);
   root.append(style, wrap);
   (doc.body ?? doc.documentElement).append(host);

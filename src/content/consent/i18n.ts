@@ -12,6 +12,7 @@ const en = {
   cont: 'Continue anyway',
   request: 'Request access',
   requested: 'Request sent',
+  learn: 'Learn why (60 s)',
 };
 export type MsgKey = keyof typeof en;
 type Table = Record<MsgKey, string>;
@@ -28,6 +29,7 @@ const de: Table = {
   cont: 'Trotzdem fortfahren',
   request: 'Zugriff anfordern',
   requested: 'Anfrage gesendet',
+  learn: 'Mehr erfahren (60 s)',
 };
 const fr: Table = {
   titleWarn: 'Vérifiez cette application avant d\'autoriser l\'accès',
@@ -41,6 +43,7 @@ const fr: Table = {
   cont: 'Continuer quand même',
   request: 'Demander l\'accès',
   requested: 'Demande envoyée',
+  learn: 'Pourquoi ? (60 s)',
 };
 const it: Table = {
   titleWarn: 'Controlla questa app prima di concedere l\'accesso',
@@ -54,6 +57,7 @@ const it: Table = {
   cont: 'Continua comunque',
   request: 'Richiedi accesso',
   requested: 'Richiesta inviata',
+  learn: 'Scopri perché (60 s)',
 };
 const nl: Table = {
   titleWarn: 'Controleer deze app voordat je toegang geeft',
@@ -67,6 +71,7 @@ const nl: Table = {
   cont: 'Toch doorgaan',
   request: 'Toegang aanvragen',
   requested: 'Verzoek verstuurd',
+  learn: 'Waarom? (60 s)',
 };
 const uk: Table = {
   titleWarn: 'Перевірте цей застосунок, перш ніж надати доступ',
@@ -80,6 +85,7 @@ const uk: Table = {
   cont: 'Усе одно продовжити',
   request: 'Запросити доступ',
   requested: 'Запит надіслано',
+  learn: 'Чому це небезпечно (60 с)',
 };
 
 const ALL: Record<string, Table> = { en, de, fr, it, nl, uk };

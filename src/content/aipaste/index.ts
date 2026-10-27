@@ -23,7 +23,7 @@ export function editableTarget(t: EventTarget | null): HTMLElement | null {
 }
 
 /** Builds the overlay in a closed shadow root. No innerHTML: AI tool pages may enforce Trusted Types. */
-export function showOverlay(doc: Document, text: PasteText, block: boolean, lang: string, onChoice: (c: Choice) => void): HTMLElement {
+export function showOverlay(doc: Document, text: PasteText, block: boolean, lang: string, onChoice: (c: Choice) => void, onLearn?: () => void): HTMLElement {
   const host = doc.createElement('div');
   host.setAttribute('data-rl-paste-warning', '');
   const root = host.attachShadow({ mode: 'closed' });
@@ -61,6 +61,16 @@ export function showOverlay(doc: Document, text: PasteText, block: boolean, lang
   const primary = mk('back', block ? text.ok : text.cancel, 'cancel');
   if (!block) mk('cont', text.paste, 'paste');
   card.append(brandMark(doc, 'compact'), h, p, actions);
+  if (onLearn) {
+    // Quiet text link after the choices; opens the lesson and leaves the overlay and its choices as they are.
+    const learn = doc.createElement('button');
+    learn.type = 'button';
+    learn.className = 'learn';
+    learn.textContent = text.learn;
+    learn.dataset['action'] = 'learn';
+    learn.addEventListener('click', onLearn);
+    card.append(learn);
+  }
   wrap.append(card);
   root.append(style, wrap);
   (doc.body ?? doc.documentElement).append(host);
@@ -143,7 +153,8 @@ export function install(
         record('went_back');
       }
     };
-    const show = (): HTMLElement => showOverlay(doc, pasteText(category, block, lang), block, lang, choose);
+    const show = (): HTMLElement => showOverlay(doc, pasteText(category, block, lang), block, lang, choose,
+      () => { void send({ type: 'open-lesson', kind: 'aipaste' }).catch(() => {}); });
     pending = { host: show(), reshow: () => { if (pending) pending.host = show(); } };
   };
   doc.addEventListener('paste', onPaste, true);

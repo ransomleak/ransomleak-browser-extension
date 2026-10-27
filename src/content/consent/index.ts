@@ -54,7 +54,8 @@ async function handle(info: ConsentInfo): Promise<void> {
   send({ type: 'consent', info, risky });
   if (risky && (mode === 'warn' || mode === 'block')) {
     const locale = pickLocale(await readLocale(), navigator.language);
-    showOverlay(document, info, mode, { locale, onRequest: send, onContinue: () => send({ type: 'consent-action', action: 'continue', info }) });
+    showOverlay(document, info, mode, { locale, onRequest: send, onContinue: () => send({ type: 'consent-action', action: 'continue', info }),
+      onLearn: () => send({ type: 'open-lesson', kind: 'consent' }) });
   }
 }
 
