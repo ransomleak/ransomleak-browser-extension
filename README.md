@@ -15,6 +15,23 @@ The source is published so that customers, security teams and works councils can
 and what it sends. What it collects is described in plain language in the
 [help center](https://docs.ransomleak.com/browser-extension/what-we-collect/).
 
+## What it does
+
+- **Look-alike sites.** Warns when an address imitates a well-known brand or your organization's own domain
+  (`micros0ft-login.com`), with the trick highlighted.
+- **New and reported sites.** Warns on very recently registered domains and on pages listed by OpenPhish and URLhaus.
+  The lists are downloaded and checked in the browser.
+- **Risky consent screens.** Flags Microsoft, Google and Slack sign-in screens that ask an unverified app for broad
+  access to a work account.
+- **60-second lessons.** "Learn why" on a warning opens a short lesson built from the site the person just hit, with
+  one quick question. It runs inside the extension, with no sign-in and no new tab.
+- **Optional extra protection.** Warnings on risky downloads and on pasting passwords, keys or card numbers into AI
+  tools, checked on the device. Off until the organization enables it and the person grants access.
+- **Popup.** Assigned training with due dates, recent warnings, and a button to report a suspicious site.
+- **Admin control.** Each check can be set to warn, block, log only or off for the whole organization.
+
+It never reads passwords, form input or page content, and never collects browsing history.
+
 ## Where to read first
 
 - `src/background/navigation.ts`: the one site classifier (look-alike, newly registered, reported, trusted).
