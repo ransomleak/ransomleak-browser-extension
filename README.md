@@ -7,6 +7,10 @@ It warns employees about look-alike, newly registered and reported phishing site
 shows their assigned training, and lets them report suspicious sites to their security team. It does nothing until it is
 connected to an organization's RansomLeak account.
 
+Install: [Chrome Web Store](https://chromewebstore.google.com/detail/ransomleak-security-aware/cmfnbigmhppdmajaicgaimpikoaoaajo)
+(also works in Microsoft Edge). Admins can force-install it instead; see
+[Deploy the extension](https://docs.ransomleak.com/browser-extension/deploy/).
+
 The source is published so that customers, security teams and works councils can check exactly what the extension does
 and what it sends. What it collects is described in plain language in the
 [help center](https://docs.ransomleak.com/browser-extension/what-we-collect/).
@@ -17,7 +21,7 @@ and what it sends. What it collects is described in plain language in the
 - Network: `src/background/api.ts` (`apiFetch`/`postJson`, used for every authenticated call to the organization's
   RansomLeak workspace), `enroll.ts` (connecting) and `policy.ts` (policy and domain-list downloads) are the only
   modules that call `fetch`. `src/background/events.ts` builds the warning events.
-- `src/content/`: the consent, password-warning and AI-paste content scripts.
+- `src/content/`: the consent and AI-paste content scripts.
 - `permissions.lock.json`: the exact permissions of the store build.
 
 ## Build and verify
